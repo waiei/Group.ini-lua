@@ -48,17 +48,25 @@ local function ConvertIniValue(data)
         return {}
     end
     local convertData  = {}
+    -- 最終的に配列として返却する必要があるかどうかのチェックのためのフラグ
+    -- キーのあるテーブルの場合、#Tableで要素数を調べられないのでこの変数で管理する
+    local has = {
+        SortList = false
+    }
     local sort = {}
     for k,v in pairs(data) do
         -- ソートの情報はまとめる
         local match,_,sortKey = string.find(k, 'SortList_(.+)')
         if match then
             sort[sortKey] = split(':', v)
+            has.SortList = true
         else
             convertData[k] = v
         end
     end
-    convertData.SortList = sort
+    if has.SortList then
+        convertData.SortList = sort
+    end
     return convertData
 end
 
@@ -73,7 +81,8 @@ return {
         local current = nil
         local values = ''
         while not f:AtEOF() do
-            local fLine = f:GetLine()
+            -- BOMを除去して取得
+            local fLine = string.gsub(f:GetLine(), '^'..string.char(0xef, 0xbb, 0xbf)..'(#.+)', '%1')
             if string.sub(string.lower(fLine), 1, 5) == '#url:' then
                 -- URL行のみ特殊処理
                 fLine = string.gsub(fLine, '#([^:]+):([^;]+);.*', '#%1:%2;')

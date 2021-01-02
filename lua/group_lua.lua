@@ -24,6 +24,19 @@ if FILEMAN:DoesFileExist(relativePath..groupIniFile) then
     groupIni = LoadActor(groupIniFile)
 end
 
+-- ファイルを検索してパスを返却（大文字小文字を無視）
+-- p1:フォルダパス
+-- p2:ファイル名
+local function SearchFile(path, fileName)
+    local dirList = FILEMAN:GetDirListing(path)
+    for d=1, #dirList do
+        if string.lower(dirList[d]) == string.lower(fileName) then
+            return path..'/'..dirList[d]
+        end
+    end
+    return nil
+end
+
 -- カラーとして変換
 local function ConvertColor(input)
     -- 文字列
@@ -54,7 +67,7 @@ end
 
 -- Group.iniを読み込む
 local function LoadGroupIni(filePath)
-    if groupIni then
+    if filePath and groupIni then
         return groupIni:Load(filePath)
     else
         return {}
@@ -155,16 +168,28 @@ end
 -- p2:取得するキー（nil）
 local function GetRaw(self, groupName, ...)
     local key = ...
-    if key then
-        if groupRaw[groupName] then
-            return groupRaw[groupName][key]
-                    or groupRaw[groupName][string.upper(key)]
-                    or groupRaw[groupName][string.lower(key)]
-                    or nil
-        end
+    -- キーを指定していない場合はグループの情報か空テーブルを返却
+    if not key then
+        return groupRaw[groupName] or {}
+    end
+    -- キーの指定がある場合
+    -- グループの情報が無い場合はnil
+    if not groupRaw[groupName] then
         return nil
     end
-    return groupRaw[groupName] or {}
+    -- キーが見つかった場合は返却
+    if groupRaw[groupName][key] then
+        return groupRaw[groupName][key]
+    end
+    -- キーの大文字小文字を無視して取得
+    key = string.lower(key)
+    for k,v in pairs(groupRaw[groupName]) do
+        if key == string.lower(k) then
+            return groupRaw[groupName][k]
+        end
+    end
+    -- ヒットしない場合はnil
+    return nil
 end
 
 -- フォルダをスキャン
@@ -172,6 +197,7 @@ end
 -- p2:グループ名 (nil)
 local function Scan(self, ...)
     local forceReload, groupName = ...
+    _SYS2(groupRaw)
     forceReload = (forceReload ~= nil) and forceReload or false
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
@@ -184,38 +210,28 @@ local function Scan(self, ...)
     local groupPath = '/Songs/'..groupName
     local groupData = {}
     
-    local hasGroupLua = FILEMAN:DoesFileExist(groupPath..'/group.lua')
+    local groupLuaPath = SearchFile(groupPath..'/', 'group.lua')
 
     -- Group.iniの強制再読み込み（Group.luaは毎回読みこむ）
     if forceReload then
         groupRaw[groupName] = nil
     end
     -- 強制再読み込みが無効で、すでに読み込み済みの場合は処理を行わない（Group.iniのみ）
-    if not hasGroupLua and groupRaw[groupName] then
+    if not groupLuaPath and groupRaw[groupName] then
         return
     end
     
-    if hasGroupLua then
+    if groupLuaPath then
         -- Group.luaを読み込み、エラーがあれば処理を行わない
-        local result, returnVal = pcall(LoadActor, groupPath..'/group.lua')
+        local result, returnVal = pcall(LoadActor, groupLuaPath)
         if not result and returnVal then
             error('Group.lua ERROR : '..groupName..'\n'..returnVal, 0)
             return
         end
         groupRaw[groupName] = returnVal
     else
-        -- Group.iniも存在しない場合は処理を行わない
-        if not FILEMAN:DoesFileExist(groupPath..'/group.ini') then
-            return
-        end
         -- Group.luaが存在しない場合はiniを変換する
-        groupRaw[groupName] = LoadGroupIni(groupPath..'/group.ini')
-    end
-    
-    -- キーの大文字小文字を無視するための処理
-    local rawKeys = {}
-    for k,v in pairs(groupRaw[groupName]) do
-        rawKeys[string.lower(k)] = k
+        groupRaw[groupName] = LoadGroupIni(SearchFile(groupPath..'/', 'group.ini'))
     end
     
     -- Name設定
@@ -372,5 +388,5 @@ Group_lua.lua
 Copyright (c) 2021 A.C
 
 This software is released under the MIT License.
-https://github.com/waiei/Group.ini-lua/blob/main/LICENSE
+https://opensource.org/licenses/mit-license.php
 --]]

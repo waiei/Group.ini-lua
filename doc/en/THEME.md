@@ -258,7 +258,7 @@ Comment test
 self:settext(Serialize(groupLua:Raw('MyTest')))
 ```
 
-ResultResult
+Result
 ```Text
 local tab1 = {}
 tab1["Url"] = "https://sm.waiei.net/"
