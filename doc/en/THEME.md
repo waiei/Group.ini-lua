@@ -215,6 +215,56 @@ Result
 ITG
 ```
 
+### Get the raw data
+<dl>
+    <dt>Raw(p1, p2)</dt>
+    <dd>
+        p1 : Group folder name<br>
+        p2(nil) : Key
+    </dd>
+</dl>
+
+Get the information described in Group.lua of the group specified in p1 directly.
+Set the key to be retrieved in p2. If not specified, all information of the group will be returned as table data.
+If the information for the key specified in p2 is not found, nil will be returned.
+This function is intended to retrieve parameters for which no dedicated get function is provided.
+For groups that only have Group.ini, it will retrieve the data after it has been internally converted to Group.lua.
+
+```Lua
+-- Songs/MyTest/group.lua
+return {
+    Comment = 'Comment test',
+}
+```
+
+```Lua
+-- Theme
+self:settext(groupLua:Raw('MyTest', 'Comment') or '')
+```
+
+Result
+```Text
+Comment test
+```
+---
+
+```Ini
+// Songs/MyTest/group.ini
+#URL:https://sm.waiei.net/;
+```
+
+```Lua
+-- Theme
+self:settext(Serialize(groupLua:Raw('MyTest')))
+```
+
+ResultResult
+```Text
+local tab1 = {}
+tab1["Url"] = "https://sm.waiei.net/"
+return tab1
+```
+
 ### Create a file for sorting
 <dl>
     <dt>Sort(p1)</dt>

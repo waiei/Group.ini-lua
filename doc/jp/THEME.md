@@ -213,6 +213,56 @@ self:settext(meterType)
 ITG
 ```
 
+### オリジナルのデータを取得
+<dl>
+    <dt>Raw(p1, p2)</dt>
+    <dd>
+        p1 : グループフォルダ名<br>
+        p2(nil) : キー
+    </dd>
+</dl>
+
+p1で指定したグループのGroup.luaに記述されている情報を直接取得します。
+p2で取得したいキーを設定します。未指定の場合はグループの全情報がテーブルで返却されます。
+p2で指定したキーの情報が見つからなかった場合はnilが返却されます。
+この関数は、専用の取得関数が用意されていないパラメータの取得を行うことを想定しています。
+Group.iniしかないグループの場合は、内部でGroup.luaに変換された後のデータを取得します。
+
+```Lua
+-- Songs/MyTest/group.lua
+return {
+    Comment = 'コメントテスト',
+}
+```
+
+```Lua
+-- Theme
+self:settext(groupLua:Raw('MyTest', 'Comment') or '')
+```
+
+結果
+```Text
+コメントテスト
+```
+---
+
+```Ini
+// Songs/MyTest/group.ini
+#URL:https://sm.waiei.net/;
+```
+
+```Lua
+-- Theme
+self:settext(Serialize(groupLua:Raw('MyTest')))
+```
+
+結果
+```Text
+local tab1 = {}
+tab1["Url"] = "https://sm.waiei.net/"
+return tab1
+```
+
 ### ソート用ファイルを作成
 <dl>
     <dt>Sort(p1)</dt>
