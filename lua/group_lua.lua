@@ -326,9 +326,9 @@ local function CreateSortText(self, ...)
     local sortName, groupNameSort = ...
     sortName = sortName or 'Group'
     groupNameSort = (groupNameSort == nil) and true or groupNameSort
-    -- 1文字目が英数字の場合、ソートで前に行くように先頭に半角スペース（string.char(0x20)）をつける
-    local MoveHead = function(text)
-        return string.gsub(text, '^(%w.*)', ' %1')
+    -- 1文字目が英数字以外の場合、ソートで後ろに行くように先頭にstring.char(126)をつける
+    local Adjust = function(text)
+        return string.gsub(string.gsub(text, '^%.', ''), '^([^%w])', string.char(126)..'%1')
     end
     local f = RageFileUtil.CreateRageFile()
     if not f:Open(THEME:GetCurrentThemeDirectory()..'Other/SongManager '..sortName..'.txt', 2) then
@@ -339,7 +339,7 @@ local function CreateSortText(self, ...)
     for g, groupName in pairs(SONGMAN:GetSongGroupNames()) do
         groupList[#groupList+1] = {
             Original = groupName,
-            Sort     = string.lower(groupNameSort and MoveHead(GetGroupName(self, groupName)) or groupName),
+            Sort     = string.lower(groupNameSort and Adjust(GetGroupName(self, groupName)) or groupName),
         }
     end
     table.sort(groupList, function(a, b)
@@ -378,7 +378,7 @@ local function CreateSortText(self, ...)
                 dirList[#dirList+1] = {
                     Dir  = string.gsub(dir, '/Songs/(.+)', '%1'),
                     Sort = sortOrder[key] or 0,
-                    Name = string.lower(MoveHead(song:GetTranslitMainTitle()..'  '..song:GetTranslitSubTitle())),
+                    Name = string.lower(Adjust(song:GetTranslitMainTitle()..'  '..song:GetTranslitSubTitle())),
                 }
             end
         end
