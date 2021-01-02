@@ -9,6 +9,7 @@ Use Group_Lua and Group_Ini to allow the theme side to handle Group.ini/lua.
 1. After running Scan(), you will be able to get the information in Group.ini/lua.
 ```Lua
 -- Scripts/Example.lua
+-- To be defined in global variables.
 GroupLua = LoadActor('group_lua.lua')
 ```
 
