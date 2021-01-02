@@ -40,9 +40,9 @@ p2にグループフォルダ名を指定すると、そのグループのみの
 groupLua:Scan()
 ```
 
-### グループ名を取得
+### Name()
 <dl>
-    <dt>Name(p1)</dt>
+    <dt>グループ名を取得</dt>
     <dd>
         p1 : グループフォルダ名
     </dd>
@@ -65,13 +65,13 @@ self:settext(groupName)
 ```
 
 結果
-```Text
+```Plain Text
 マイテスト
 ```
 
-### グループカラーを取得
+### GroupColor()
 <dl>
-    <dt>GroupColor(p1)</dt>
+    <dt>グループカラーを取得</dt>
     <dd>
         p1 : グループフォルダ名
     </dd>
@@ -93,9 +93,9 @@ local groupColor = groupLua:GroupColor('MyTest')
 self:diffuse(groupColor)
 ```
 
-### オリジナルフォルダ名を取得
+### OriginalName()
 <dl>
-    <dt>OriginalName(p1)</dt>
+    <dt>オリジナルフォルダ名を取得</dt>
     <dd>
         p1 : Song型
     </dd>
@@ -119,13 +119,13 @@ self:settext(originalName)
 ```
 
 結果
-```Text
+```Plain Text
 TestGroup
 ```
 
-### 難易度尺度を取得
+### MeterType()
 <dl>
-    <dt>MeterType(p1)</dt>
+    <dt>難易度尺度を取得</dt>
     <dd>
         p1 : Song型
     </dd>
@@ -148,13 +148,13 @@ self:settext(meterType)
 ```
 
 結果
-```Text
+```Plain Text
 DDR X
 ```
 
-### 楽曲カラーを取得
+### MenuColor()
 <dl>
-    <dt>MenuColor(p1)</dt>
+    <dt>楽曲カラーを取得</dt>
     <dd>
         p1 : Song型
     </dd>
@@ -176,9 +176,9 @@ local menuColor = groupLua:MenuColor(GAMESTATE:GetCurrentSong())
 self:diffuse(menuColor)
 ```
 
-### デフォルト値を設定
+### Default()
 <dl>
-    <dt>Default(p1, p2)</dt>
+    <dt>デフォルト値を設定</dt>
     <dd>
         p1 : キー<br>
         p2 : 値
@@ -209,13 +209,13 @@ self:settext(meterType)
 ```
 
 結果
-```Text
+```Plain Text
 ITG
 ```
 
-### オリジナルのデータを取得
+### Raw()
 <dl>
-    <dt>Raw(p1, p2)</dt>
+    <dt>オリジナルのデータを取得</dt>
     <dd>
         p1 : グループフォルダ名<br>
         p2(nil) : キー
@@ -241,12 +241,12 @@ self:settext(groupLua:Raw('MyTest', 'Comment') or '')
 ```
 
 結果
-```Text
+```Plain Text
 コメントテスト
 ```
 ---
 
-```Ini
+```Plain Text
 // Songs/MyTest/group.ini
 #URL:https://sm.waiei.net/;
 ```
@@ -257,24 +257,25 @@ self:settext(Serialize(groupLua:Raw('MyTest')))
 ```
 
 結果
-```Text
+```Plain Text
 local tab1 = {}
 tab1["Url"] = "https://sm.waiei.net/"
 return tab1
 ```
 
-### ソート用ファイルを作成
+### Sort()
 <dl>
-    <dt>Sort(p1)</dt>
+    <dt>ソート用ファイルを作成</dt>
     <dd>
-        p1('Group') : ソート名
+        p1('Group') : ソート名<br>
+        p2(true) : グループのソートをNameの値で行う
     </dd>
 </dl>
 
 Group.luaのSortListキーで定義されている楽曲順序を読み込み、ユーザーソートファイルとしてテーマのOtherフォルダに出力します。
 この関数を呼び出すと`SONGMAN:SetPreferredSongs`も実行されるため、Preferredソートにするだけで楽曲順序の設定が適用されます。
 楽曲数によっては非常に時間のかかる処理となるため、関数の呼び出しタイミングには注意してください。
-なお、グループフォルダはNameで定義された名前を優先してソートされます。
+p2がtrueの場合、グループフォルダはNameで定義された名前を優先してソートされます。
 
 ```Lua
 -- Songs/MyTest/group.lua
@@ -295,7 +296,7 @@ groupLua:Sort()
 ```
 
 結果（Themes/MyTheme/Other/SongManager Group.txt）
-```Text
+```Plain Text
 ---MyTest
 MyTest/songCis1st/
 MyTest/songAis2nd/

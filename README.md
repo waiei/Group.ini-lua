@@ -1,5 +1,7 @@
 [README(EN-DeepL)](README.md) / [README(JP)](README_JP.md)
 
+**The English documentation has been automatically translated using [DeepL](https://www.deepl.com/home).**
+
 # Group.ini-lua
 A summary of information on Group.ini available for some of StepMania's themes and the specification of the new Group.lua format.
 
@@ -23,7 +25,7 @@ Also, since it is a table, the theme can read it without the need for parsing.
 
 (Example)
 Group.ini
-```
+```Plain Text
 #NAME:Group name (multibyte acceptable);
 #MENUCOLOR:
 1,0,0,1
@@ -40,7 +42,7 @@ song2
 ```
 
 Group.lua (draft)
-```
+```Lua
 return {
     Name = 'Group name (multibyte acceptable)',
     MenuColor = {

@@ -23,7 +23,7 @@ Group.iniは多くの機能を追加しますが、独自の書式であるた�
 
 例）
 Group.ini
-```
+```Plain Text
 #NAME:グループ名（マルチバイト文字可）;
 #MENUCOLOR:
 1,0,0,1
@@ -40,7 +40,7 @@ song2
 ```
 
 Group.lua（草案）
-```
+```Lua
 return {
     Name = 'グループ名（マルチバイト文字可）',
     MenuColor = {

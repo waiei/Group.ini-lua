@@ -74,6 +74,11 @@ local function LoadGroupIni(filePath)
     end
 end
 
+-- Rawデータを設定
+local function SetRaw(groupName, data)
+    groupRaw[groupName] = data
+end
+
 -- NAMEを設定
 local function SetGroupName(groupName, data)
     groupNameList[groupName] = data
@@ -197,12 +202,11 @@ end
 -- p2:グループ名 (nil)
 local function Scan(self, ...)
     local forceReload, groupName = ...
-    _SYS2(groupRaw)
     forceReload = (forceReload ~= nil) and forceReload or false
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
         for i, group in pairs(SONGMAN:GetSongGroupNames()) do
-            Scan(self, group, forceReload)
+            Scan(self, forceReload, group)
         end
         return
     end
@@ -214,10 +218,17 @@ local function Scan(self, ...)
 
     -- Group.iniの強制再読み込み（Group.luaは毎回読みこむ）
     if forceReload then
-        groupRaw[groupName] = nil
+        SetRaw(groupName, nil)
     end
     -- 強制再読み込みが無効で、すでに読み込み済みの場合は処理を行わない（Group.iniのみ）
-    if not groupLuaPath and groupRaw[groupName] then
+    local hasData = false
+    for k,v in pairs(GetRaw(self, groupName)) do
+        if v then
+            hasData = true
+            break
+        end
+    end
+    if not groupLuaPath and hasData then
         return
     end
     
@@ -228,10 +239,10 @@ local function Scan(self, ...)
             error('Group.lua ERROR : '..groupName..'\n'..returnVal, 0)
             return
         end
-        groupRaw[groupName] = returnVal
+        SetRaw(groupName, returnVal)
     else
         -- Group.luaが存在しない場合はiniを変換する
-        groupRaw[groupName] = LoadGroupIni(SearchFile(groupPath..'/', 'group.ini'))
+        SetRaw(groupName, LoadGroupIni(SearchFile(groupPath..'/', 'group.ini')))
     end
     
     -- Name設定
@@ -295,9 +306,15 @@ end
 
 -- ソートファイルを作成
 -- p1:ソートファイル名（Group）
+-- p2:グループをNameで指定したテキストでソート（true）
 local function CreateSortText(self, ...)
-    local sortName = ...
+    local sortName, groupNameSort = ...
     sortName = sortName or 'Group'
+    groupNameSort = (groupNameSort == nil) and true or groupNameSort
+    -- 1文字目が「'"-+*/_()」のいずれかの場合、ソートで後ろに行くように先頭に「ﾟ」をつける
+    local MoveLast = function(text)
+        return string.gsub(text, '^([%\'%"%-%+%*%/_()].*)', 'ﾟ%1')
+    end
     local f = RageFileUtil.CreateRageFile()
     if not f:Open(THEME:GetCurrentThemeDirectory()..'Other/SongManager '..sortName..'.txt', 2) then
         f:destroy()
@@ -307,8 +324,7 @@ local function CreateSortText(self, ...)
     for g, groupName in pairs(SONGMAN:GetSongGroupNames()) do
         groupList[#groupList+1] = {
             Original = groupName,
-            -- 1文字目が「'"-+*/_()」のいずれかの場合、ソートで後ろに行くように先頭に「ﾟ」をつける
-            Sort     = string.lower(string.gsub(GetGroupName(self, groupName), '^([%\'%"%-%+%*%/_()].*)', 'ﾟ%1')),
+            Sort     = string.lower(groupNameSort and MoveLast(GetGroupName(self, groupName)) or groupName),
         }
     end
     table.sort(groupList, function(a, b)
@@ -347,8 +363,7 @@ local function CreateSortText(self, ...)
                 dirList[#dirList+1] = {
                     Dir  = string.gsub(dir, '/Songs/(.+)', '%1'),
                     Sort = sortOrder[key] or 0,
-                    -- [AAA]より[AAA -AAA-]が後ろに行くようにメインタイトルの後ろにスペースを2つ入れる
-                    Name = string.lower(string.gsub(song:GetTranslitMainTitle()..'  '..song:GetTranslitSubTitle(), '^([%-%+%*%/_()].*)', 'ﾟ%1')),
+                    Name = string.lower(MoveLast(song:GetTranslitMainTitle()..'  '..song:GetTranslitSubTitle())),
                 }
             end
         end

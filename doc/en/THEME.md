@@ -40,9 +40,9 @@ If you specify a group folder name in p2, only that group will be reloaded.
 groupLua:Scan()
 ```
 
-### Get the group name
+### Name(p1)
 <dl>
-    <dt>Name(p1)</dt>
+    <dt>Get the group name</dt>
     <dd>
         p1 : Group folder name
     </dd>
@@ -65,13 +65,13 @@ self:settext(groupName)
 ```
 
 Result
-```Text
+```Plain Text
 DisplayGroupName
 ```
 
-### Get the group color
+### GroupColor(p1)
 <dl>
-    <dt>GroupColor(p1)</dt>
+    <dt>Get the group color</dt>
     <dd>
         p1 : Group folder name
     </dd>
@@ -94,9 +94,9 @@ local groupColor = groupLua:GroupColor('MyTest')
 self:diffuse(groupColor)
 ```
 
-### Get the original folder name
+### OriginalName(p1)
 <dl>
-    <dt>OriginalName(p1)</dt>
+    <dt>Get the original folder name</dt>
     <dd>
         p1 : Song
     </dd>
@@ -120,13 +120,13 @@ self:settext(originalName)
 ```
 
 Result
-```Text
+```Plain Text
 TestGroup
 ```
 
-### Get a difficulty scale
+### MeterType(p1)
 <dl>
-    <dt>MeterType(p1)</dt>
+    <dt>Get a difficulty scale</dt>
     <dd>
         p1 : Song
     </dd>
@@ -149,13 +149,13 @@ self:settext(meterType)
 ```
 
 Result
-```Text
+```Plain Text
 DDR X
 ```
 
-### Get the song color.
+### MenuColor(p1)
 <dl>
-    <dt>MenuColor(p1)</dt>
+    <dt>Get the song color</dt>
     <dd>
         p1 : Song
     </dd>
@@ -178,9 +178,9 @@ local menuColor = groupLua:MenuColor(GAMESTATE:GetCurrentSong())
 self:diffuse(menuColor)
 ```
 
-### Set the default value
+### Default(p1, p2)
 <dl>
-    <dt>Default(p1, p2)</dt>
+    <dt>Set the default value</dt>
     <dd>
         p1 : Key<br>
         p2 : Value
@@ -211,13 +211,13 @@ self:settext(meterType)
 ```
 
 Result
-```Text
+```Plain Text
 ITG
 ```
 
-### Get the raw data
+### Raw(p1, p2)
 <dl>
-    <dt>Raw(p1, p2)</dt>
+    <dt>Get the raw data</dt>
     <dd>
         p1 : Group folder name<br>
         p2(nil) : Key
@@ -243,12 +243,12 @@ self:settext(groupLua:Raw('MyTest', 'Comment') or '')
 ```
 
 Result
-```Text
+```Plain Text
 Comment test
 ```
 ---
 
-```Ini
+```Plain Text
 // Songs/MyTest/group.ini
 #URL:https://sm.waiei.net/;
 ```
@@ -259,24 +259,25 @@ self:settext(Serialize(groupLua:Raw('MyTest')))
 ```
 
 Result
-```Text
+```Plain Text
 local tab1 = {}
 tab1["Url"] = "https://sm.waiei.net/"
 return tab1
 ```
 
-### Create a file for sorting
+### Sort(p1)
 <dl>
-    <dt>Sort(p1)</dt>
+    <dt>Create a file for sorting</dt>
     <dd>
-        p1('Group') : Sort name
+        p1('Group') : Sort name<br>
+        p2(true) : Sort groups by the value of Name
     </dd>
 </dl>
 
 Reads the song order defined by the SortList key in Group.lua and outputs it as a user sort file to the Other folder of the theme.
 When you call this function, `SONGMAN:SetPreferredSongs` will also be executed, so the songs will be sorted in the specified order if you select the Preferred sort.
 Be careful about the timing of the function call, as this can be a very time-consuming process depending on the number of songs.
-For group folder sorting, the name defined in Name has priority.
+If p2 is true, the sorting of group folders will give priority to the name defined in Name.
 
 ```Lua
 -- Songs/MyTest/group.lua
@@ -297,7 +298,7 @@ groupLua:Sort()
 ```
 
 Result（Themes/MyTheme/Other/SongManager Group.txt）
-```Text
+```Plain Text
 ---MyTest
 MyTest/songCis1st/
 MyTest/songAis2nd/
