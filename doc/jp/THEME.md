@@ -8,9 +8,17 @@
 1. LoadActorやdofile等でgroup_lua.luaを読み込んでください。
 1. Scan()を実行後、各情報を取得することができるようになります。
 ```Lua
-local groupLua = LoadActor('group_lua.lua')
-groupLua:Scan()
+-- Scripts/Example.lua
+-- グローバル変数で定義すること
+GroupLua = LoadActor('group_lua.lua')
 ```
+
+```Lua
+-- Theme
+GroupLua:Scan()
+```
+注意：group_lua.luaの読み込みは一度だけにして、グローバル変数で管理してください。
+スクリプトごとにローカル変数で管理すると、Scan()で取得した情報が使いまわされず、その都度再読み込みが発生します。
 
 ## 追加される関数
 パラメータの説明に()で値が記載されている項目は引数の指定が任意で、未指定の場合の値となります。
@@ -37,7 +45,7 @@ p2にグループフォルダ名を指定すると、そのグループのみの
 
 ```Lua
 -- Theme
-groupLua:Scan()
+GroupLua:Scan()
 ```
 
 ### Name()
@@ -60,7 +68,7 @@ return {
 
 ```Lua
 -- Theme
-local groupName = groupLua:Name('MyTest')
+local groupName = GroupLua:Name('MyTest')
 self:settext(groupName)
 ```
 
@@ -89,7 +97,7 @@ return {
 
 ```Lua
 -- Theme
-local groupColor = groupLua:GroupColor('MyTest')
+local groupColor = GroupLua:GroupColor('MyTest')
 self:diffuse(groupColor)
 ```
 
@@ -114,7 +122,7 @@ return {
 
 ```Lua
 -- Theme
-local originalName = groupLua:OriginalName('MyTest')
+local originalName = GroupLua:OriginalName('MyTest')
 self:settext(originalName)
 ```
 
@@ -143,7 +151,7 @@ return {
 
 ```Lua
 -- Theme
-local meterType = groupLua:MeterType(GAMESTATE:GetCurrentSong())
+local meterType = GroupLua:MeterType(GAMESTATE:GetCurrentSong())
 self:settext(meterType)
 ```
 
@@ -172,7 +180,7 @@ return {
 
 ```Lua
 -- Theme
-local menuColor = groupLua:MenuColor(GAMESTATE:GetCurrentSong())
+local menuColor = GroupLua:MenuColor(GAMESTATE:GetCurrentSong())
 self:diffuse(menuColor)
 ```
 
@@ -202,9 +210,9 @@ return {}
 
 ```Lua
 -- Theme
-groupLua:Default('MeterType', 'ITG')
+GroupLua:Default('MeterType', 'ITG')
 
-local meterType = groupLua:MeterType(GAMESTATE:GetCurrentSong())
+local meterType = GroupLua:MeterType(GAMESTATE:GetCurrentSong())
 self:settext(meterType)
 ```
 
@@ -237,7 +245,7 @@ return {
 
 ```Lua
 -- Theme
-self:settext(groupLua:Raw('MyTest', 'Comment') or '')
+self:settext(GroupLua:Raw('MyTest', 'Comment') or '')
 ```
 
 結果
@@ -253,7 +261,7 @@ self:settext(groupLua:Raw('MyTest', 'Comment') or '')
 
 ```Lua
 -- Theme
-self:settext(Serialize(groupLua:Raw('MyTest')))
+self:settext(Serialize(GroupLua:Raw('MyTest')))
 ```
 
 結果
@@ -292,7 +300,7 @@ return {
 
 ```Lua
 -- Theme
-groupLua:Sort()
+GroupLua:Sort()
 ```
 
 結果（Themes/MyTheme/Other/SongManager Group.txt）

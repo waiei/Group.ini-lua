@@ -8,9 +8,17 @@ Use Group_Lua and Group_Ini to allow the theme side to handle Group.ini/lua.
 1. Load group_lua.lua using an external file loading function such as LoadActor or dofile.
 1. After running Scan(), you will be able to get the information in Group.ini/lua.
 ```Lua
-local groupLua = LoadActor('group_lua.lua')
-groupLua:Scan()
+-- Scripts/Example.lua
+GroupLua = LoadActor('group_lua.lua')
 ```
+
+```Lua
+-- Theme
+GroupLua:Scan()
+```
+Note:<br>
+group_lua.lua should be loaded only once and managed as a global variable.
+If you manage it in a local variable for each script, the information retrieved by Scan() will not be reused, and you will have to scan it every time you switch screens.
 
 ## Available Functions
 For items with () in the parameter description, specifying the argument is optional. The value in parentheses () is the value when not specified.
@@ -37,7 +45,7 @@ If you specify a group folder name in p2, only that group will be reloaded.
 
 ```Lua
 -- Theme
-groupLua:Scan()
+GroupLua:Scan()
 ```
 
 ### Name(p1)
@@ -60,7 +68,7 @@ return {
 
 ```Lua
 -- Theme
-local groupName = groupLua:Name('MyTest')
+local groupName = GroupLua:Name('MyTest')
 self:settext(groupName)
 ```
 
@@ -90,7 +98,7 @@ return {
 
 ```Lua
 -- Theme
-local groupColor = groupLua:GroupColor('MyTest')
+local groupColor = GroupLua:GroupColor('MyTest')
 self:diffuse(groupColor)
 ```
 
@@ -115,7 +123,7 @@ return {
 
 ```Lua
 -- Theme
-local originalName = groupLua:OriginalName('MyTest')
+local originalName = GroupLua:OriginalName('MyTest')
 self:settext(originalName)
 ```
 
@@ -144,7 +152,7 @@ return {
 
 ```Lua
 -- Theme
-local meterType = groupLua:MeterType(GAMESTATE:GetCurrentSong())
+local meterType = GroupLua:MeterType(GAMESTATE:GetCurrentSong())
 self:settext(meterType)
 ```
 
@@ -174,7 +182,7 @@ return {
 
 ```Lua
 -- Theme
-local menuColor = groupLua:MenuColor(GAMESTATE:GetCurrentSong())
+local menuColor = GroupLua:MenuColor(GAMESTATE:GetCurrentSong())
 self:diffuse(menuColor)
 ```
 
@@ -204,9 +212,9 @@ return {}
 
 ```Lua
 -- Theme
-groupLua:Default('MeterType', 'ITG')
+GroupLua:Default('MeterType', 'ITG')
 
-local meterType = groupLua:MeterType(GAMESTATE:GetCurrentSong())
+local meterType = GroupLua:MeterType(GAMESTATE:GetCurrentSong())
 self:settext(meterType)
 ```
 
@@ -239,7 +247,7 @@ return {
 
 ```Lua
 -- Theme
-self:settext(groupLua:Raw('MyTest', 'Comment') or '')
+self:settext(GroupLua:Raw('MyTest', 'Comment') or '')
 ```
 
 Result
@@ -255,7 +263,7 @@ Comment test
 
 ```Lua
 -- Theme
-self:settext(Serialize(groupLua:Raw('MyTest')))
+self:settext(Serialize(GroupLua:Raw('MyTest')))
 ```
 
 Result
@@ -294,7 +302,7 @@ return {
 
 ```Lua
 -- Theme
-groupLua:Sort()
+GroupLua:Sort()
 ```
 
 Result（Themes/MyTheme/Other/SongManager Group.txt）
