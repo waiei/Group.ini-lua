@@ -31,7 +31,7 @@ local function SearchFile(path, fileName)
     local dirList = FILEMAN:GetDirListing(path)
     for d=1, #dirList do
         if string.lower(dirList[d]) == string.lower(fileName) then
-            return path..'/'..dirList[d]
+            return path..dirList[d]
         end
     end
     return nil
@@ -234,12 +234,30 @@ local function Scan(self, ...)
     
     if groupLuaPath then
         -- Group.luaを読み込み、エラーがあれば処理を行わない
-        local result, returnVal = pcall(LoadActor, groupLuaPath)
-        if not result and returnVal then
-            error('Group.lua ERROR : '..groupName..'\n'..returnVal, 0)
+        local f = RageFileUtil.CreateRageFile()
+        if not f:Open(groupLuaPath, 1) then
+            f:destroy()
             return
         end
-        SetRaw(groupName, returnVal)
+        -- BOMがあるとエラーになるので回避
+        local luaData = string.gsub(f:Read(), '^'..string.char(0xef, 0xbb, 0xbf)..'(.*)', '%1')
+        f:Close()
+        f:destroy()
+        local luaString, errMsg
+        -- loadstringはLua5.2以降廃止
+        -- assertでエラーをキャッチするとluaDataの中身が出力されるのでここではキャッチしない
+        if _VERSION == 'Lua 5.1' then
+            luaString, errMsg = loadstring(luaData)
+        else
+            luaString, errMsg = load(luaData)
+        end
+        -- エラー発生時に変数の中身が出力されてもメッセージが流れないようにクリア
+        luaData = nil
+        if not luaString and errMsg then
+            error('Group.lua ERROR : '..groupName..'\n'..errMsg, 0)
+            return
+        end
+        SetRaw(groupName, luaString())
     else
         -- Group.luaが存在しない場合はiniを変換する
         SetRaw(groupName, LoadGroupIni(SearchFile(groupPath..'/', 'group.ini')))
