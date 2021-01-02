@@ -6,7 +6,7 @@
 A summary of information on Group.ini available for some of StepMania's themes and the specification of the new Group.lua format.
 
 ## What's Group.ini?
-This is a feature implemented in the StepMania 5.0 theme WAIEI, which allows you to create a file called Group.ini directly under the group folder for various customizations.
+This is a feature implemented in the StepMania 5.0 theme WAIEI, which allows you to create a file called Group.ini directly under the group folder for various customizations.  
 For example, the following functions are available.
 - Japanese notation for group folders.
 - The color of the text on the song selection screen.(MENUCOLOR)
@@ -15,12 +15,12 @@ For example, the following functions are available.
 Group.ini is used in many of the Japanese packages, and can be handled by the WAIEI series as well as several other themes.
 
 ## Group.lua
-Group.ini adds a lot of functionality, but because of its unique format, you need to learn how to write it in order to create it.
-The extension is INI, but the format is different from the general INI, so it needs to be analyzed to be handled by the theme.
+Group.ini adds a lot of functionality, but because of its unique format, you need to learn how to write it in order to create it.  
+The extension is INI, but the format is different from the general INI, so it needs to be analyzed to be handled by the theme.  
 Also, it does not allow for advanced usage such as script control.
 
-In order to solve the above problem, Group.lua is designed to be defined in Lua tables.
-The basic format is the same as in Group.ini, but the different formats are unified.
+In order to solve the above problem, Group.lua is designed to be defined in Lua tables.  
+The basic format is the same as in Group.ini, but the different formats are unified.  
 Also, since it is a table, the theme can read it without the need for parsing.
 
 (Example)
