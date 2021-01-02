@@ -216,10 +216,6 @@ local function Scan(self, ...)
     
     local groupLuaPath = SearchFile(groupPath..'/', 'group.lua')
 
-    -- Group.iniの強制再読み込み（Group.luaは毎回読みこむ）
-    if forceReload then
-        SetRaw(groupName, nil)
-    end
     -- 強制再読み込みが無効で、すでに読み込み済みの場合は処理を行わない（Group.iniのみ）
     local hasData = false
     for k,v in pairs(GetRaw(self, groupName)) do
@@ -228,9 +224,10 @@ local function Scan(self, ...)
             break
         end
     end
-    if not groupLuaPath and hasData then
+    if not groupLuaPath and hasData and not forceReload then
         return
     end
+    SetRaw(groupName, nil)
     
     if groupLuaPath then
         -- Group.luaを読み込み、エラーがあれば処理を行わない
