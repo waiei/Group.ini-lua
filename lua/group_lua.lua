@@ -326,9 +326,9 @@ local function CreateSortText(self, ...)
     local sortName, groupNameSort = ...
     sortName = sortName or 'Group'
     groupNameSort = (groupNameSort == nil) and true or groupNameSort
-    -- 1文字目が「'"-+*/_()」のいずれかの場合、ソートで後ろに行くように先頭に「ﾟ」をつける
+    -- 1文字目が英数字の場合、ソートで前に行くように先頭に半角スペース（string.char(0x20)）をつける
     local MoveLast = function(text)
-        return string.gsub(text, '^([%\'%"%-%+%*%/_()].*)', 'ﾟ%1')
+        return string.gsub(text, '^(%w.*)', ' %1')
     end
     local f = RageFileUtil.CreateRageFile()
     if not f:Open(THEME:GetCurrentThemeDirectory()..'Other/SongManager '..sortName..'.txt', 2) then
@@ -372,7 +372,7 @@ local function CreateSortText(self, ...)
         for i, song in pairs(SONGMAN:GetSongsInGroup(groupName)) do
             local dir = song:GetSongDir()
             local splitDir = split('/', dir)
-            -- 1文字目が「-+*/_()」のいずれかの場合、ソートで後ろに行くように先頭に「ﾟ」をつける
+            -- 楽曲フォルダ名（小文字）を取得
             local key = string.lower(string.gsub(dir, '/Songs/.*/([^/]+)/', '%1'))
             if sortOrder[key] ~= 0 then    -- 0 = Hidden（※Default = nil）
                 dirList[#dirList+1] = {
