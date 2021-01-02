@@ -17,7 +17,7 @@ GroupLua = LoadActor('group_lua.lua')
 -- Theme
 GroupLua:Scan()
 ```
-注意：group_lua.luaの読み込みは一度だけにして、グローバル変数で管理してください。
+注意：group_lua.luaの読み込みは一度だけにして、グローバル変数で管理してください。  
 スクリプトごとにローカル変数で管理すると、Scan()で取得した情報が使いまわされず、その都度再読み込みが発生します。
 
 [追加される関数](FUNCTIONS.md)

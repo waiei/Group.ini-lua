@@ -18,7 +18,7 @@ GroupLua = LoadActor('group_lua.lua')
 GroupLua:Scan()
 ```
 Note:<br>
-group_lua.lua should be loaded only once and managed as a global variable.
+group_lua.lua should be loaded only once and managed as a global variable.  
 If you manage it in a local variable for each script, the information retrieved by Scan() will not be reused, and you will have to scan it every time you switch screens.
 
 [Available Functions](FUNCTIONS.md)
