@@ -22,7 +22,7 @@ Group.iniは多くの機能を追加しますが、独自の書式であるた�
 また、テーブルのため、テーマ側ではそのまま受け取るだけで対応できます。
 
 例）
-Group.ini
+`Group.ini`
 ```Plain Text
 #NAME:グループ名（マルチバイト文字可）;
 #MENUCOLOR:
@@ -39,7 +39,7 @@ song2
 ;
 ```
 
-Group.lua（草案）
+`Group.lua（草案）`
 ```Lua
 return {
     Name = 'グループ名（マルチバイト文字可）',

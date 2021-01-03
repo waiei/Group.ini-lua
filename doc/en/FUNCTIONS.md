@@ -11,7 +11,7 @@ For items with () in the parameter description, specifying the argument is optio
 - [Raw()](#raw)
 - [Sort()](#sort)
 
-### Scan()
+## Scan()
 
 <dl>
     <dt>Scan for folder information</dt>

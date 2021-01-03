@@ -24,7 +24,7 @@ The basic format is the same as in Group.ini, but the different formats are unif
 Also, since it is a table, the theme can read it without the need for parsing.
 
 (Example)
-Group.ini
+`Group.ini`
 ```Plain Text
 #NAME:Group name (multibyte acceptable);
 #MENUCOLOR:
@@ -41,7 +41,7 @@ song2
 ;
 ```
 
-Group.lua (draft)
+`Group.lua (draft)`
 ```Lua
 return {
     Name = 'Group name (multibyte acceptable)',
