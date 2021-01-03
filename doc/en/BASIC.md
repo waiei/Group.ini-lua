@@ -188,7 +188,7 @@ Common INI editing tools are not available, so you will need to edit them direct
 
 `#key:value;` is the basic writing style. Lines beginning with `//` are comments and are ignored.  
 Values can be written over multiple lines, and `;` is treated as the end of the line.  
-However, since the search is performed using the `# key:`, it is not possible to break a line in the middle of `#~:`.  
+However, since the search is performed using the `#key:`, it is not possible to break a line in the middle of `#~:`.  
 If the same key is entered more than once, the last entry will be given priority.  
 Note that keys are not case-sensitive. `#NAME:` and `#Name:` are treated as the same key.
 
