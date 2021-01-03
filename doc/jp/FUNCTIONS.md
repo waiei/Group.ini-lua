@@ -1,6 +1,16 @@
 # 追加される関数
 パラメータの説明に()で値が記載されている項目は引数の指定が任意で、未指定の場合の値となります。
 
+- [Scan()](#scan)
+- [Name()](#name)
+- [GroupColor()](#groupcolor)
+- [OriginalName()](#originalname)
+- [MeterType()](#metertype)
+- [MenuColor()](#menucolor)
+- [Default()](#default)
+- [Raw()](#raw)
+- [Sort()](#sort)
+
 ## Scan()
 
 <dl>
