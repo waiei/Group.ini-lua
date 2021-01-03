@@ -68,12 +68,12 @@ return {
 
 基本的にはGroup.iniと同じように、`#キー:値;`と書いていたものを`キー='値',`に置き換えることができます。
 
-Group.ini
+`Group.ini`
 ```Plain Text
 #Name:テキスト;
 ```
 
-Group.lua
+`Group.lua`
 ```Lua
 return {
     Name = 'テキスト',
@@ -90,7 +90,7 @@ return{Name='テキスト'}
 また、値にはLuaの変数や関数を記述することができます。  
 これにより条件を指定して値を変更するといった高度な使い方も可能となります。
 
-Group.lua
+`Group.lua`
 ```Lua
 local function DisplayMenuColor()
     -- 先にJOINしたのがPlayer1かどうかで色を変える
@@ -106,7 +106,7 @@ return {
 
 ### 複数値が設定できるパラメータ
 
-Group.iniでは`#MenuColor`/`#MeterType`と`#SortList`の書式が異なるため、単純にテキストをコピーするだけでは適用できず、修正する必要がありました。　　
+Group.iniでは`#MenuColor`/`#MeterType`と`#SortList`の書式が異なるため、単純にテキストをコピーするだけでは適用できず、修正する必要がありました。  
 Group.luaではそういった手間をなくすために、複数記述が可能なパラメータの書き方を変更して統一化しています。
 
 ```Lua
@@ -257,3 +257,5 @@ return {
 ```
 
 フォルダ名は大文字小文字を区別せずに認識されます。
+
+SortListは記述方法が異なるため、個別のページを確認してください。
