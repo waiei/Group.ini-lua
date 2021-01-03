@@ -1,8 +1,8 @@
 # 基本の書き方
 Group.ini/luaの作成場所と、基本的な書き方についての説明です。
 
-- [Group.lua](#Group.lua)
-- [Group.ini](#Group.ini)
+- [Group.lua](#grouplua)
+- [Group.ini](#groupini)
 
 ## 作成場所
 
