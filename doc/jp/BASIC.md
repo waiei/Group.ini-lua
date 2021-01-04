@@ -194,40 +194,40 @@ return {
 
 ```Plain Text
 // OK
-#Name:テキスト;
+#NAME:テキスト;
 
 // OK
-#Name:テキ
+#NAME:テキ
 スト;
 
 // OK
-#Name:
+#NAME:
 // コメント
 テキスト
 ;
 
 // NG（スペースが入ってしまいます）
-#Name:
+#NAME:
         テキスト
         ;
 
 // NG（キーとして認識されません）
-#Name
+#NAME
 :テキスト;
 ```
 
 値はテキストのみが設定できます。  
-例えば`#MenuColor`のように色を指定する項目では、RGBAの順でカンマ区切りのテキストを指定してください。
+例えば`#MENUCOLOR`のように色を指定する項目では、RGBAの順でカンマ区切りのテキストを指定してください。
 
 ```Plain Text
 // OK
-#MenuColor:1,0,0,1;
+#MENUCOLOR:1,0,0,1;
 
 // OK
-#MenuColor:1.0, 0.0, 0.0, 1.0;
+#MENUCOLOR:1.0, 0.0, 0.0, 1.0;
 
 // NG（Luaスクリプトでの指定はできません）
-#MenuColor:Color('Red');
+#MENUCOLOR:Color('Red');
 ```
 
 ### 複数値が設定できるパラメータ
@@ -239,16 +239,16 @@ return {
 
 ```Plain Text
 // Nameはグループ全体の定義なので値が一つだけ
-#Name:テキスト;
+#NAME:テキスト;
 
 // グループ全体の楽曲カラーを指定したい場合
-#MenuColor:0.0, 1.0, 1.0, 1.0;
+#MENUCOLOR:0.0, 1.0, 1.0, 1.0;
 
 // 特定の楽曲だけカラーを指定したい場合
-#MenuColor:0,1,1,1:1,0,0,1|bossSong;
+#MENUCOLOR:0,1,1,1:1,0,0,1|bossSong;
 
 // これと同じ
-#MenuColor:
+#MENUCOLOR:
 // デフォルトカラー
 0,1,1,1
 :

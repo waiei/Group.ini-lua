@@ -28,7 +28,7 @@ Group.iniではMenuColorキーに対して色を設定してください。
 
 `Group.ini`
 ```Plain Text
-#MenuColor:0.0, 1.0, 0.0, 1.0;
+#MENUCOLOR:0.0, 1.0, 0.0, 1.0;
 ```
 
 ## 楽曲ごとに設定
@@ -40,7 +40,7 @@ Group.iniではMenuColorキーに対して色を設定してください。
 `Group.lua`
 ```Lua
 return {
-    OriginalName = {
+    MenuColor = {
         {
             Default = '0,1,0,1',
             Aqua = color('#00ffffff'),
@@ -63,14 +63,13 @@ Group.iniでは`:`で定義を区切って複数書くことができます。�
 
 `Group.ini`
 ```Plain Text
-#MenuColor:0,1,0,1:0,0,1,1|songB|songC:1,0,0,1|bossSong;
+#MENUCOLOR:0,1,0,1:0,0,1,1|songB|songC:1,0,0,1|bossSong;
 ```
 一行で書くこともできますが、非常に見づらいため改行することを推奨します。  
 改行することで途中でコメントを入れることもできます。
 
-`Group.ini`
 ```Plain Text
-#MenuColor:
+#MENUCOLOR:
 // Green(Default)
 0,1,0,1
 :

@@ -20,7 +20,7 @@ return {
 
 `Group.ini`
 ```Plain Text
-#OriginalName:Folder name;
+#ORIGINALNAME:Folder name;
 ```
 
 ## 楽曲ごとに設定
@@ -52,14 +52,13 @@ Group.iniでは`:`で定義を区切って複数書くことができます。�
 
 `Group.ini`
 ```Plain Text
-#OriginalName:Folder name:Original name|songA|songB|songC;
+#ORIGINALNAME:Folder name:Original name|songA|songB|songC;
 ```  
 一行で書くこともできますが、非常に見づらいため改行することを推奨します。  
 改行することで途中でコメントを入れることもできます。
 
-`Group.ini`
 ```Plain Text
-#OriginalName:
+#ORIGINALNAME:
 // DefaultDefault
 Folder name
 :

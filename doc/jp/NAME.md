@@ -6,27 +6,18 @@ StepManiaではグループ名はフォルダ名が表示されます。
 Nameパラメータはこの問題を解決するために表示グループ名を定義する機能です。  
 楽曲単位での情報は持たず、グループで一つ定義することができます。
 
-- [Group.lua](#grouplua)
-- [Group.ini](#groupini)
-
-## Group.lua
-
-### 基本
+## 基本
 
 Nameキーに対して文字列を設定してください。
 
+`Group.lua`
 ```Lua
 return {
     Name = '表示テキスト',
 }
 ```
 
-## Group.ini
-
-### 基本
-
-Nameキーを設定してください。
-
+`Group.ini`
 ```Plain Text
-#Name:表示テキスト;
+#NAME:表示テキスト;
 ```
