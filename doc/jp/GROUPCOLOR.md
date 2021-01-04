@@ -2,7 +2,7 @@
 
 グループの色を定義します。  
 定義したことによりどのような挙動となるかはテーマの実装次第です。  
-この機能は<a href="https://bitbucket.org/inorizushi/xx-starlight-download/src/master/README.md" target="_blank">XX -STARLiGHT-</a>のテーマで追加されたパラメータです。
+この機能は[XX -STARLiGHT-](https://bitbucket.org/inorizushi/xx-starlight-download/src/master/README.md)のテーマで追加されたパラメータです。
 
 ## 基本
 

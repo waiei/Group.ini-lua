@@ -2,7 +2,7 @@
 
 Defines the color of the group.  
 It is up to the implementation of the theme to decide how the definition will behave.  
-This feature is a parameter added to the <a href="https://bitbucket.org/inorizushi/xx-starlight-download/src/master/README.md" target="_blank">XX -STARLiGHT-</a> theme.
+This feature is a parameter added to [XX -STARLiGHT-](https://bitbucket.org/inorizushi/xx-starlight-download/src/master/README.md) theme.
 
 ## Basic format
 
