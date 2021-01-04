@@ -12,3 +12,4 @@ Documentation on the format of Group.ini/lua and how to use it from the theme.
 - [GroupColor - Set the color of the group](GROUPCOLOR.md)
 - [MenuColor - Set the song color](MENUCOLOR.md)
 - [MeterType - Set the song difficulty scale](METERTYPE.md)
+- [SortList：グループ内楽曲のソート](SORTLIST.md)

@@ -12,3 +12,4 @@ Group.ini/luaの書式とテーマからの使い方のドキュメントです�
 - [GroupColor：グループの色を設定](GROUPCOLOR.md)
 - [MenuColor：楽曲カラーを設定する](MENUCOLOR.md)
 - [MeterType：楽曲難易度尺度を設定する](METERTYPE.md)
+- [SortList：グループ内楽曲のソート](SORTLIST.md)
