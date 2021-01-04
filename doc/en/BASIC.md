@@ -71,8 +71,8 @@ Basically, replace the `#key:value;` in Group.ini with `key='value',`.
 
 `Group.ini`
 ```Plain Text
-#Name:Text;
-#MenuColor:1.0,0.0,0.0,1.0;
+#NAME:Text;
+#MENUCOLOR:1.0,0.0,0.0,1.0;
 ```
 
 `Group.lua`
@@ -83,6 +83,7 @@ return {
 }
 ```
 
+The key is written in uppercase in Group.ini, following the conventional writing style, but it is not case-sensitive.  
 Spaces and indentations are just for readability, and can be written as follows
 
 ```Lua
@@ -196,40 +197,40 @@ Note that keys are not case-sensitive. `#NAME:` and `#Name:` are treated as the 
 
 ```Plain Text
 // OK
-#Name:Text;
+#NAME:Text;
 
 // OK
-#Name:Te
+#NAME:Te
 xt;
 
 // OK
-#Name:
+#NAME:
 // Comment
 Text
 ;
 
 // NG (A space is inserted in the middle of a string.)
-#Name:
+#NAME:
         Text
         ;
 
 // NG (Not recognized as a key)
-#Name
+#NAME
 :Text;
 ```
 
 Only text can be set as the value.  
-For example, for items that specify a color, such as `#MenuColor`, the text should be separated by commas in the order of RGBA.
+For example, for items that specify a color, such as `#MENUCOLOR`, the text should be separated by commas in the order of RGBA.
 
 ```Plain Text
 // OK
-#MenuColor:1,0,0,1;
+#MENUCOLOR:1,0,0,1;
 
 // OK
-#MenuColor:1.0, 0.0, 0.0, 1.0;
+#MENUCOLOR:1.0, 0.0, 0.0, 1.0;
 
 // NG (Cannot be specified in Lua script)
-#MenuColor:Color('Red');
+#MENUCOLOR:Color('Red');
 ```
 
 ### Parameters that can be set to multiple values
@@ -241,17 +242,17 @@ The first definition will be the default value.
 
 ```Plain Text
 // Name is the definition of the entire group, so it has only one value
-#Name:Text;
+#NAME:Text;
 
 // If you want to specify the song color for the entire group
-#MenuColor:0.0, 1.0, 1.0, 1.0;
+#MENUCOLOR:0.0, 1.0, 1.0, 1.0;
 
 // If you want to specify a color for a specific song
-#MenuColor:0,1,1,1:1,0,0,1|bossSong;
+#MENUCOLOR:0,1,1,1:1,0,0,1|bossSong;
 
 // It can be defined in multiple lines,
 // which is the same as the next.
-#MenuColor:
+#MENUCOLOR:
 // Default color
 0,1,1,1
 :
