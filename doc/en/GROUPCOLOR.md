@@ -2,7 +2,7 @@
 
 Defines the color of the group.  
 It is up to the implementation of the theme to decide how the definition will behave.  
-This feature is a parameter added to [XX -STARLiGHT-](https://bitbucket.org/inorizushi/xx-starlight-download/src/master/README.md) theme.
+This feature is a parameter added to [SN3](https://github.com/MidflightDigital/ddrsn3-theme) theme.
 
 ## Basic format
 
