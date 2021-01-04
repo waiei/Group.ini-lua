@@ -71,19 +71,21 @@ return {
 `Group.ini`
 ```Plain Text
 #Name:テキスト;
+#MenuColor:1.0,0.0,0.0,1.0;
 ```
 
 `Group.lua`
 ```Lua
 return {
     Name = 'テキスト',
+    MenuColor = '1.0,0.0,0.0,1.0',
 }
 ```
 
 空白やインデントは見やすくしているだけであり、次のように書くこともできます。
 
 ```Lua
-return{Name='テキスト'}
+return{Name='テキスト',MenuColor='1.0,0.0,0.0,1.0'}
 ```
 ただし、後の管理が大変になるため、空白やインデントは入れることを推奨します。
 

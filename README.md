@@ -23,7 +23,7 @@ In order to solve the above problem, Group.lua is designed to be defined in Lua 
 The basic format is the same as in Group.ini, but the different formats are unified.  
 Also, since it is a table, the theme can read it without the need for parsing.
 
-(Example)
+(Example)  
 `Group.ini`
 ```Plain Text
 #NAME:Group name (multibyte acceptable);

@@ -72,19 +72,21 @@ Basically, replace the `#key:value;` in Group.ini with `key='value',`.
 `Group.ini`
 ```Plain Text
 #Name:Text;
+#MenuColor:1.0,0.0,0.0,1.0;
 ```
 
 `Group.lua`
 ```Lua
 return {
     Name = 'Text',
+    MenuColor = '1.0,0.0,0.0,1.0',
 }
 ```
 
 Spaces and indentations are just for readability, and can be written as follows
 
 ```Lua
-return{Name='Text'}
+return{Name='Text',MenuColor='1.0,0.0,0.0,1.0'}
 ```
 However, it is recommended to include whitespace and indentations, as writing in abbreviated form will make it more difficult to manage later.
 
