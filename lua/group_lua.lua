@@ -1,4 +1,4 @@
---[[ Group_Lua v1.0 alpha 20210102 ]]
+--[[ Group_Lua v1.0 alpha 20210105 ]]
 
 -- Rawデータ
 local groupRaw = {}
