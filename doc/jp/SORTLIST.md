@@ -5,14 +5,14 @@ Group.ini/luaのSortListを使用することでPreferredソート用のファ�
 Group.iniでは、前方ソートの`#SORTLIST_FRONT`と後方ソートの`#SORTLIST_REAR`でキーが異なっていましたが、Group.luaでは`SortList`で統一されています。
 
 グループ内に下記フォルダ名の楽曲があるとして説明します。  
-`bossSong` `default` `songA` `songB` `songC`  
+`bossSong` `default` `songA` `songB` `songC`
 
-デフォルトのグループソートではABC順のため、記載したとおりの順序となります。  
-`bossSong`→`default`→`songA`→`songB`→`songC`  
+デフォルトのグループソートではABC順のため、次の順序となります。  
+`bossSong`→`default`→`songA`→`songB`→`songC`
 
 ## 基本
 
-SortListキーの中に、対象の楽曲フォルダをリスト化したFront/キーRearキーを作成します。
+SortListキーの中に、対象の楽曲フォルダ名をリスト化したFront/Rearキーを作成します。
 
 `Group.lua`
 ```Lua
@@ -29,12 +29,16 @@ return {
     },
 }
 ```
-Front→未指定→Rearの順にソートされます。  
+まず、Front→未指定→Rearの順にソートされ、次に記述したフォルダ名の順序でソートされます。  
 上記の場合、次のようにソートされます。  
 `songC`→`songA`→`songB`→`default`→`bossSong`
 
 ---
+
+Group.iniではFrontとRearが別のパラメータとなっています。
+
 `Group.ini`
+
 ```Plain Text
 #SORTLIST_FRONT:songC:songA:songB;
 #SORTLIST_REAR:bossSong;
@@ -79,15 +83,15 @@ return {
 ```
 
 Group.luaではFront/Rearといったキーそのもののソート順を変更することができます。  
-また、キー名そのものも変更することができます。  
+また、キー名もFront/Rear以外に定義することができます。  
 
 `Group.lua`
 ```Lua
 return {
     SortList = {
         {
-            Default = 4
-            BeforeDefault = 3,
+            Default = 10
+            BeforeDefault = 9,
             New = 2,
             Front = 1,
         },
@@ -104,7 +108,8 @@ return {
     },
 }
 ```
-上記の場合、`Default` `BeforeDefault` `New` `Front`の値でソートを行い、そのあとに各キーの中で指定した順序に並べます。  
+定義した値でキーのソートを行い、そのあとに各キーのフォルダを指定した順序に並べます。  
+つまり、`Front`→`New`→`BeforeDefault`→`Default`の順にソートされた後に、それぞれの楽曲フォルダをソートします。  
 結果、下記のような順序となります。  
 `bossSong`→`songB`→`songC`→`songA`→`default`
 
