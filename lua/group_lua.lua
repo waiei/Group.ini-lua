@@ -1,16 +1,34 @@
 --[[ Group_Lua v1.0 alpha 20210102 ]]
 
+-- Rawデータ
 local groupRaw = {}
-local groupNameList = {}
-local groupColorList = {}
-local groupOriginalName = {}
-local groupMenuColor = {}
-local groupMeterType = {}
+-- 管理用変数に保存対象のキー
+local cacheSupportKeys = {
+    'Name',
+    'GroupColor',
+    'OriginalName',
+    'MenuColor',
+    'MeterType',
+    'LyricType',
+}
+-- 管理用変数
+local groupParams = {}
+for i=1,#cacheSupportKeys do
+    groupParams[cacheSupportKeys[i]] = {}
+end
 
+-- デフォルト値
 local default = {
     GroupColor = nil,
-    MenuColor = nil,
-    MeterType = 'DDR',
+    MenuColor  = nil,
+    MeterType  = 'DDR',
+    LyricType  = 'Default',
+}
+
+-- 値の型（文字列のキーは定義不要）
+local valueType = {
+    GroupColor = 'color',
+    MenuColor  = 'color',
 }
 
 -- このファイルの相対パス
@@ -74,97 +92,90 @@ local function LoadGroupIni(filePath)
     end
 end
 
--- Rawデータを設定
-local function SetRaw(groupName, data)
-    groupRaw[groupName] = data
-end
-
--- NAMEを設定
-local function SetGroupName(groupName, data)
-    groupNameList[groupName] = data
-end
-
--- グループカラーを設定
-local function SetGroupColor(groupName, data)
-    local groupColor = ConvertColor(data)
-    if groupColor then
-        groupColorList[groupName] = groupColor
+-- グループ単位で情報を持つことができるパラメータを管理用変数に保存
+local function SetGroupParams(groupName, key, data)
+    -- 色として扱うパラメータ
+    if valueType[key] == 'color' then
+        local convertedColor = ConvertColor(data)
+        if convertedColor then
+            groupParams[key][groupName] = convertedColor
+        else
+            groupParams[key][groupName] = default[key]
+        end
+    -- 文字列として扱うパラメータ
     else
-        groupColorList[groupName] = SONGMAN:GetSongGroupColor(groupName)
+        groupParams[key][groupName] = data
     end
 end
 
--- ORIGINALNAMEを設定
-local function ScanOriginalName(groupName, data)
-    -- 文字列
-    if type(data) == 'string' then
-        groupOriginalName[groupName] = data
-        return
-    end
-    -- 定義
-    local originalList = {Default = groupName}
-    for k,v in pairs(data[1] or {}) do
-        originalList[k] = v
-    end
-    -- グループデフォルトName
-    groupOriginalName[groupName] = originalList.Default
-    -- 定義されてるデータ分ループ
-    for k,v in pairs(originalList) do
-        if k ~= 'Default' then  -- デフォルトは無視
-            for s=1, #(data[k] or {}) do
-                groupOriginalName[GetSongLowerDir(groupName, data[k][s])] = v
-            end
+-- 楽曲単位で情報を持つことができるパラメータを解析して管理用変数に保存
+local function SetMultiParams(groupName, key, data)
+    -- グループ単位、楽曲単位どちらで定義しているかチェック
+    -- 色として扱うパラメータ
+    if valueType[key] == 'color' then
+        groupParams[key][groupName] = ConvertColor(data)
+        -- ひとつのカラーが定義されている場合、グループ単位の定義
+        if groupParams[key][groupName] then
+            return
         end
-    end
-end
-
--- METERTYPEを設定
-local function ScanMeterType(groupName, data)
-    -- 文字列
-    if type(data) == 'string' then
-        groupMeterType[groupName] = data
-        return
-    end
-    -- 定義
-    local meterList = {Default = 'DDR'}
-    for k,v in pairs(data[1] or {}) do
-        meterList[k] = string.upper(v)
-    end
-    -- グループデフォルトMeterType
-    groupMeterType[groupName] = meterList.Default
-    -- 定義されてるデータ分ループ
-    for k,v in pairs(meterList) do
-        if k ~= 'Default' then  -- デフォルトは無視
-            for s=1, #(data[k] or {}) do
-                groupMeterType[GetSongLowerDir(groupName, data[k][s])] = v
-            end
-        end
-    end
-end
-
--- MENUCOLORを設定
-local function ScanMenuColor(groupName, data)
-    -- グループデフォルトカラー
-    groupMenuColor[groupName] = ConvertColor(data)
-    if groupMenuColor[groupName] then
-        return
+    -- 文字列として扱うパラメータ
     else
-        groupMenuColor[groupName] = nil
+        -- 値が文字列の場合はグループ単位の定義
+        if type(data) == 'string' then
+            groupParams[key][groupName] = data
+            return
+        end
     end
+    -- 楽曲単位の定義
     -- 定義
-    local colorList = {Default = groupMenuColor[groupName]}
+    local valueList = {Default = default[key] or groupName}
     for k,v in pairs(data[1] or {}) do
-        local cnvColor = ConvertColor(v)
-        colorList[k] = cnvColor or groupMenuColor[groupName]
+        valueList[k] = (valueType[key] == 'color') and ConvertColor(v) or v
     end
-    groupMenuColor[groupName] = colorList.Default
+    -- グループデフォルト
+    groupParams[key][groupName] = valueList.Default
     -- 定義されてるデータ分ループ
-    for k,v in pairs(colorList) do
+    for k,v in pairs(valueList) do
         if k ~= 'Default' then  -- デフォルトは無視
             for s=1, #(data[k] or {}) do
-                groupMenuColor[GetSongLowerDir(groupName, data[k][s])] = {v[1], v[2], v[3], v[4]}
+                groupParams[key][GetSongLowerDir(groupName, data[k][s])] = v
             end
         end
+    end
+end
+
+-- Grouop.luaまたはGroup.iniを読み込んでRawデータとして保存
+local function SetRaw(groupName, groupLuaPath, groupIniPath)
+    groupRaw[groupName] = nil
+    if groupLuaPath then
+        -- Group.luaを読み込み、エラーがあれば処理を行わない
+        local f = RageFileUtil.CreateRageFile()
+        if not f:Open(groupLuaPath, 1) then
+            f:destroy()
+            return
+        end
+        -- BOMがあるとエラーになるので回避
+        local luaData = string.gsub(f:Read(), '^'..string.char(0xef, 0xbb, 0xbf)..'(.?)', '%1')
+        f:Close()
+        f:destroy()
+        local luaString, errMsg
+        -- loadstringはLua5.2以降廃止
+        -- assertでエラーをキャッチするとluaDataの中身が出力されるのでここではキャッチしない
+        if _VERSION == 'Lua 5.1' then
+            luaString, errMsg = loadstring(luaData)
+        else
+            luaString, errMsg = load(luaData)
+        end
+        -- エラー発生時に変数の中身が出力されてもメッセージが流れないようにクリア
+        luaData = nil
+        if not luaString and errMsg then
+            error('Group.lua ERROR : '..groupName..'\n'..errMsg, 0)
+            return
+        end
+        groupRaw[groupName] = luaString()
+    else
+        -- Group.luaが存在しない場合はiniを変換する
+        groupRaw[groupName] = LoadGroupIni(groupIniPath)
     end
 end
 
@@ -212,7 +223,6 @@ local function Scan(self, ...)
     end
     
     local groupPath = '/Songs/'..groupName
-    local groupData = {}
     
     local groupLuaPath = SearchFile(groupPath..'/', 'group.lua')
 
@@ -227,87 +237,94 @@ local function Scan(self, ...)
     if not groupLuaPath and hasData and not forceReload then
         return
     end
-    SetRaw(groupName, nil)
     
-    if groupLuaPath then
-        -- Group.luaを読み込み、エラーがあれば処理を行わない
-        local f = RageFileUtil.CreateRageFile()
-        if not f:Open(groupLuaPath, 1) then
-            f:destroy()
-            return
-        end
-        -- BOMがあるとエラーになるので回避
-        local luaData = string.gsub(f:Read(), '^'..string.char(0xef, 0xbb, 0xbf)..'(.*)', '%1')
-        f:Close()
-        f:destroy()
-        local luaString, errMsg
-        -- loadstringはLua5.2以降廃止
-        -- assertでエラーをキャッチするとluaDataの中身が出力されるのでここではキャッチしない
-        if _VERSION == 'Lua 5.1' then
-            luaString, errMsg = loadstring(luaData)
-        else
-            luaString, errMsg = load(luaData)
-        end
-        -- エラー発生時に変数の中身が出力されてもメッセージが流れないようにクリア
-        luaData = nil
-        if not luaString and errMsg then
-            error('Group.lua ERROR : '..groupName..'\n'..errMsg, 0)
-            return
-        end
-        SetRaw(groupName, luaString())
-    else
-        -- Group.luaが存在しない場合はiniを変換する
-        SetRaw(groupName, LoadGroupIni(SearchFile(groupPath..'/', 'group.ini')))
+    -- 読みこんでRawに保存
+    local groupIniPath = (not groupLuaPath) and SearchFile(groupPath..'/', 'group.ini') or nil
+    SetRaw(groupName, groupLuaPath, groupIniPath)
+    
+    -- グループごとに情報を持つことができるパラメータを設定
+    local groupParams = {
+        'Name',
+        'GroupColor',
+    }
+    for i=1, #groupParams do
+        SetGroupParams(groupName, groupParams[i], GetRaw(self, groupName, groupParams[i]) or nil)
     end
     
-    -- Name設定
-    SetGroupName(groupName, GetRaw(self, groupName, 'Name') or nil)
-
-    -- OriginalName解析
-    ScanOriginalName(groupName, GetRaw(self, groupName, 'OriginalName') or {})
-    
-    -- MenuColor解析
-    ScanMenuColor(groupName, GetRaw(self, groupName, 'MenuColor') or {})
-    
-    -- MeterType解析
-    ScanMeterType(groupName, GetRaw(self, groupName, 'MeterType') or {})
+    -- 楽曲ごとに情報を持つことができるパラメータを設定
+    local multiParams = {
+        'OriginalName',
+        'MenuColor',
+        'MeterType',
+        'LyricType',
+    }
+    for i=1, #multiParams do
+        SetMultiParams(groupName, multiParams[i], GetRaw(self, groupName, multiParams[i]) or {})
+    end
 end
 
 -- グループ名を取得
 -- p1:グループ名
 local function GetGroupName(self, groupName)
-    return groupNameList[groupName] or SONGMAN:ShortenGroupName(groupName)
+    return groupParams.Name[groupName] or SONGMAN:ShortenGroupName(groupName)
 end
 
 -- グループカラーを取得
 -- p1:グループ名
 local function GetGroupColor(self, groupName)
-    return groupColorList[groupName] or default.GroupColor or SONGMAN:GetSongGroupColor(groupName)
+    return groupParams.GroupColor[groupName] or default.GroupColor or SONGMAN:GetSongGroupColor(groupName)
+end
+
+-- URLを取得
+-- p1:グループ名
+local function GetUrl(self, groupName)
+    return GetRaw(self, groupName, 'Url') or ''
+end
+
+-- コメントを取得
+-- p1:グループ名
+-- p2:改行を有効（true）
+local function GetComment(self, groupName, ...)
+    local enableLineBreaks = ...
+    enableLineBreaks = (enableLineBreaks == nil) and true or enableLineBreaks
+    local comment = GetRaw(self, groupName, 'Comment') or ''
+    if enableLineBreaks then
+        return comment
+    end
+    return string.gsub(comment, '(.-)[\n]', '%1 ')
 end
 
 -- song型からORIGINALNAMEを取得
 -- p1:Song
 local function GetOriginalName(self, song)
-    return groupOriginalName[string.lower(song:GetSongDir())] 
-        or groupOriginalName[song:GetGroupName()]
+    return groupParams.OriginalName[string.lower(song:GetSongDir())] 
+        or groupParams.OriginalName[song:GetGroupName()]
         or song:GetGroupName()
 end
 
 -- song型からMETERTYPEを取得
 -- p1:Song
 local function GetMeterType(self, song)
-    return groupMeterType[string.lower(song:GetSongDir())] 
-        or groupMeterType[song:GetGroupName()]
+    return groupParams.MeterType[string.lower(song:GetSongDir())] 
+        or groupParams.MeterType[song:GetGroupName()]
         or default.MeterType
 end
 
 -- song型からMENUCOLORを取得
 -- p1:Song
 local function GetMenuColor(self, song)
-    return groupMenuColor[string.lower(song:GetSongDir())] 
-        or groupMenuColor[song:GetGroupName()]
+    return groupParams.MenuColor[string.lower(song:GetSongDir())] 
+        or groupParams.MenuColor[song:GetGroupName()]
         or default.MenuColor
         or SONGMAN:GetSongColor(song)
+end
+
+-- song型からLYRICTYPEを取得
+-- p1:Song
+local function GetLyricType(self, song)
+    return groupParams.LyricType[string.lower(song:GetSongDir())] 
+        or groupParams.LyricType[song:GetGroupName()]
+        or default.LyricType
 end
 
 -- デフォルト値を設定
@@ -369,12 +386,14 @@ local function CreateSortText(self, ...)
         end
         -- ソート用のテーブル作成
         local dirList = {}
+        local dirCount = 0
         for i, song in pairs(SONGMAN:GetSongsInGroup(groupName)) do
             local dir = song:GetSongDir()
             local splitDir = split('/', dir)
             -- 楽曲フォルダ名（小文字）を取得
             local key = string.lower(string.gsub(dir, '/Songs/.*/([^/]+)/', '%1'))
             if sortOrder[key] ~= 0 then    -- 0 = Hidden（※Default = nil）
+                dirCount = dirCount + 1
                 dirList[#dirList+1] = {
                     Dir  = string.gsub(dir, '/Songs/(.+)', '%1'),
                     Sort = sortOrder[key] or 0,
@@ -382,16 +401,18 @@ local function CreateSortText(self, ...)
                 }
             end
         end
-        table.sort(dirList, function(a, b)
-                                if a.Sort ~= b.Sort then
-                                    return a.Sort < b.Sort
-                                else
-                                    return a.Name < b.Name
-                                end
-                            end)
-        f:PutLine("---"..groupName)
-        for i,dir in pairs(dirList) do
-            f:PutLine(dir.Dir)
+        if dirCount > 0 then
+            table.sort(dirList, function(a, b)
+                                    if a.Sort ~= b.Sort then
+                                        return a.Sort < b.Sort
+                                    else
+                                        return a.Name < b.Name
+                                    end
+                                end)
+            f:PutLine("---"..groupName)
+            for i,dir in pairs(dirList) do
+                f:PutLine(dir.Dir)
+            end
         end
     end
     f:Close()
@@ -404,9 +425,12 @@ return {
     Raw          = GetRaw,
     Name         = GetGroupName,
     GroupColor   = GetGroupColor,
+    Url          = GetUrl,
+    Comment      = GetComment,
     OriginalName = GetOriginalName,
     MenuColor    = GetMenuColor,
     MeterType    = GetMeterType,
+    LyricType    = GetLyricType,
     Sort         = CreateSortText,
     Default      = SetDefaultValue,
 }
