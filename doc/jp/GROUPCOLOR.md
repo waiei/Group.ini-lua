@@ -1,4 +1,4 @@
-[🔙 一覧](../README.md)
+[🔙 一覧](README.md)
 
 # GroupColor：グループの色を設定
 

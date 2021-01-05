@@ -1,4 +1,4 @@
-[🔙 一覧](../README.md)
+[🔙 一覧](README.md)
 
 # MeterType：楽曲難易度尺度を設定する
 

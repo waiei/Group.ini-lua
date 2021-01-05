@@ -1,4 +1,4 @@
-[🔙 BACK](../README.md)
+[🔙 BACK](README.md)
 
 # OriginalName - Treats the song as belonging to the specified group
 

@@ -1,4 +1,4 @@
-[🔙 BACK](../README.md)
+[🔙 BACK](README.md)
 
 # Using Group.ini/lua with themes
 

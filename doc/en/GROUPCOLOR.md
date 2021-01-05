@@ -1,4 +1,4 @@
-[🔙 BACK](../README.md)
+[🔙 BACK](README.md)
 
 # GroupColor - Set the color of the group
 

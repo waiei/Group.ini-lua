@@ -1,4 +1,4 @@
-[🔙 BACK](../README.md)
+[🔙 BACK](README.md)
 
 # MenuColor - Set the song color
 

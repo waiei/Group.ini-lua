@@ -1,4 +1,4 @@
-[🔙 BACK](../README.md)
+[🔙 BACK](README.md)
 
 # SortList - Sorting of songs in a group
 

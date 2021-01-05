@@ -1,4 +1,4 @@
-[🔙 一覧](../README.md)
+[🔙 一覧](README.md)
 
 # SortList：グループ内楽曲のソート
 

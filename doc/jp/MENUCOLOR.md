@@ -1,4 +1,4 @@
-[🔙 一覧](../README.md)
+[🔙 一覧](README.md)
 
 # MenuColor：楽曲カラーを設定する
 

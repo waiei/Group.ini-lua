@@ -1,3 +1,5 @@
+[🔙 BACK](README.md)
+
 # Basic Writing Style
 This section explains where to create Group.ini/lua and how to write it in a basic way.
 

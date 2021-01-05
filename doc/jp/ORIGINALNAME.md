@@ -1,4 +1,4 @@
-[🔙 一覧](../README.md)
+[🔙 一覧](README.md)
 
 # OriginalName：指定グループの楽曲として扱う
 
