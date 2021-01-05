@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # OriginalName - Treats the song as belonging to the specified group
 
 The rival functions and other features implemented in some themes may not work properly unless they match up to the group folder name.  

@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # GroupColor - Set the color of the group
 
 Defines the color of the group.  

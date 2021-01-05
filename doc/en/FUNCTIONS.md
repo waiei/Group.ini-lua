@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # Available Functions
 For items with () in the parameter description, specifying the argument is optional. The value in parentheses () is the value when not specified.
 

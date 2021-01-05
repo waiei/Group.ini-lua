@@ -1,3 +1,5 @@
+[English(DeepL)](../en/README.md) / [日本語](../jp/README.md)
+
 # Group.ini/lua documents
 
 Documentation on the format of Group.ini/lua and how to use it from the theme.

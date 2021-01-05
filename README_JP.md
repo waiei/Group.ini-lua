@@ -1,4 +1,4 @@
-[README(EN-DeepL)](README.md) / [README(JP)](README_JP.md)
+[English(DeepL)](README.md) / [日本語](README_JP.md)
 
 # Group.ini/lua
 StepManiaの一部のテーマで利用可能なGroup.iniの情報まとめと、新しいフォーマットとなるGroup.luaの仕様です。

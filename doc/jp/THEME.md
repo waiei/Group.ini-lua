@@ -1,3 +1,5 @@
+[🔙 一覧](../README.md)
+
 # テーマから呼び出す
 
 当リポジトリで配布しているGroup_LuaとGroup_Iniを使用して、テーマ側でGroup.ini/luaを扱えるようにします。

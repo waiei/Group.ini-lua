@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # MeterType - Set the song difficulty scale
 
 You can set the difficulty level of the song.  

@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # Using Group.ini/lua with themes
 
 Use Group_Lua and Group_Ini to allow the theme side to handle Group.ini/lua.

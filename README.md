@@ -1,4 +1,4 @@
-[README(EN-DeepL)](README.md) / [README(JP)](README_JP.md)
+[English(DeepL)](README.md) / [日本語](README_JP.md)
 
 **The English documentation has been translated using [DeepL](https://www.deepl.com/home).**
 

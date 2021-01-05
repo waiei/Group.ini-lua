@@ -1,3 +1,5 @@
+[🔙 BACK](../README.md)
+
 # MenuColor - Set the song color
 
 Sets the color of the music displayed in the music selection screen.  

@@ -1,3 +1,5 @@
+[🔙 一覧](../README.md)
+
 # SortList：グループ内楽曲のソート
 
 StepManiaではデフォルトのグループ順ソートとは別にユーザーソート（Preferredソート）が存在します。  

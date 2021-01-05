@@ -1,3 +1,5 @@
+[English(DeepL)](../en/README.md) / [日本語](../jp/README.md)
+
 # Group.ini/luaドキュメント
 
 Group.ini/luaの書式とテーマからの使い方のドキュメントです。
