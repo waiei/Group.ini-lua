@@ -64,7 +64,7 @@ return {
 }
 ```
 
-キーの大文字小文字は区別しません。これにより、TestA、TestB、TestC、Nameキーが認識されます。  
+Group.luaではキーの大文字小文字を区別しません。これにより、TestA、TestB、TestC、Nameキーが認識されます。  
 しかし、Group.luaではTestA、TestB、TestCは意味のないキーなので無視されます。  
 最終的にNameキーが認識され、グループ名が「テキスト」として扱われます。
 
