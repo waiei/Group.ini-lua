@@ -1,4 +1,4 @@
---[[ Group_Lua v1.0 alpha 20210105 ]]
+--[[ Group_Lua v1.0 alpha 20210803 ]]
 
 -- Rawデータ
 local groupRaw = {}
@@ -102,7 +102,7 @@ end
 -- グループ単位で情報を持つことができるパラメータを管理用変数に保存
 local function SetGroupParams(groupName, key, data)
     -- 色として扱うパラメータ
-    if valueType[key] == 'color' then
+    if valueType[key] and valueType[key] == 'color' then
         local convertedColor = ConvertColor(data)
         if convertedColor then
             groupParams[key][groupName] = convertedColor
@@ -119,7 +119,7 @@ end
 local function SetMultiParams(groupName, key, data)
     -- グループ単位、楽曲単位どちらで定義しているかチェック
     -- 色として扱うパラメータ
-    if valueType[key] == 'color' then
+    if valueType[key] and valueType[key] == 'color' then
         groupParams[key][groupName] = ConvertColor(data)
         -- ひとつのカラーが定義されている場合、グループ単位の定義
         if groupParams[key][groupName] then
@@ -136,6 +136,13 @@ local function SetMultiParams(groupName, key, data)
     -- 楽曲単位の定義
     -- 定義
     local valueList = {Default = default[key] or groupName}
+    -- 色のデフォルト値を設定(02 Colors.lua)
+    if valueType[key] and valueType[key] == 'color' then
+        for k,v in pairs(Color) do
+            valueList[k] = v
+        end
+    end
+    -- 定義を設定
     for k,v in pairs(data[1] or {}) do
         valueList[k] = (valueType[key] == 'color') and ConvertColor(v) or v
     end
@@ -145,7 +152,8 @@ local function SetMultiParams(groupName, key, data)
     for k,v in pairs(valueList) do
         if k ~= 'Default' then  -- デフォルトは無視
             for s=1, #(data[k] or {}) do
-                groupParams[key][string.lower(groupName..'/'..data[k][s]..'/')] = v
+                local folder = (type(data[k][s]) == 'table') and data[k][s][1] or data[k][s]
+                groupParams[key][string.lower(string.format('%s/%s/', groupName, folder))] = v
             end
         end
     end
@@ -271,13 +279,18 @@ end
 -- グループ名を取得
 -- p1:グループ名
 local function GetGroupName(self, groupName)
-    return groupParams.Name[groupName] or SONGMAN:ShortenGroupName(groupName)
+    return (groupName and groupName ~= '')
+        and groupParams.Name[groupName]
+        or SONGMAN:ShortenGroupName(groupName)
 end
 
 -- グループカラーを取得
 -- p1:グループ名
 local function GetGroupColor(self, groupName)
-    return groupParams.GroupColor[groupName] or default.GroupColor or SONGMAN:GetSongGroupColor(groupName)
+    return (groupName and groupName ~= '')
+        and groupParams.GroupColor[groupName]
+        or default.GroupColor
+        or SONGMAN:GetSongGroupColor(groupName)
 end
 
 -- URLを取得
@@ -385,7 +398,8 @@ local function CreateSortText(self, ...)
         for k,v in pairs(sortList) do
             if k ~= 'Default' then  -- デフォルトは無視
                 for i, dir in pairs(sortData[k] or {}) do
-                    sortOrder[string.lower(dir)] = (k ~= 'Hidden') and i + 100000 * sortList[k] or 0
+                    local folder = (type(dir) == 'table') and dir[1] or dir
+                    sortOrder[string.lower(folder)] = (k ~= 'Hidden') and i + 100000 * sortList[k] or 0
                 end
             end
         end
@@ -394,7 +408,6 @@ local function CreateSortText(self, ...)
         local dirCount = 0
         for i, song in pairs(SONGMAN:GetSongsInGroup(groupName)) do
             local dir = song:GetSongDir()
-            local splitDir = split('/', dir)
             -- 楽曲フォルダ名（小文字）を取得
             local key = string.lower(string.gsub(dir, '/[^/]*Songs/[^/]+/([^/]+)/', '%1'))
             if sortOrder[key] ~= 0 then    -- 0 = Hidden（※Default = nil）
