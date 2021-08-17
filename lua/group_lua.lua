@@ -1,4 +1,4 @@
---[[ Group_Lua v1.0 alpha 20210803 ]]
+--[[ Group_Lua v20210818 ]]
 
 -- Rawデータ
 local groupRaw = {}
@@ -153,7 +153,7 @@ local function SetMultiParams(groupName, key, data)
         if k ~= 'Default' then  -- デフォルトは無視
             for s=1, #(data[k] or {}) do
                 local folder = (type(data[k][s]) == 'table') and data[k][s][1] or data[k][s]
-                groupParams[key][string.lower(string.format('%s/%s/', groupName, folder))] = v
+                groupParams[key][string.lower(string.format('%s/%s/', groupName, folder or ''))] = v
             end
         end
     end
@@ -287,6 +287,9 @@ end
 -- グループカラーを取得
 -- p1:グループ名
 local function GetGroupColor(self, groupName)
+    if not FindValue(SONGMAN:GetSongGroupNames(), groupName) then
+        return default.GroupColor or Color('White')
+    end
     return (groupName and groupName ~= '')
         and groupParams.GroupColor[groupName]
         or default.GroupColor
@@ -331,7 +334,7 @@ end
 -- song型からMENUCOLORを取得
 -- p1:Song
 local function GetMenuColor(self, song)
-    return groupParams.MenuColor[GetSongLowerDir(song)] 
+    return groupParams.MenuColor[GetSongLowerDir(song)]
         or groupParams.MenuColor[song:GetGroupName()]
         or default.MenuColor
         or SONGMAN:GetSongColor(song)
@@ -340,9 +343,56 @@ end
 -- song型からLYRICTYPEを取得
 -- p1:Song
 local function GetLyricType(self, song)
-    return groupParams.LyricType[GetSongLowerDir(song)] 
+    return groupParams.LyricType[GetSongLowerDir(song)]
         or groupParams.LyricType[song:GetGroupName()]
         or default.LyricType
+end
+
+-- カスタムパラメータから指定キーの定義と値をテーブルで取得
+-- ※毎回GetRawが行われるので複数のデータを一気に取得することを想定していません
+-- p1:string
+-- p2:string
+-- p3:string
+-- 定義値, キー名 を返却
+local function GetCustomValue(self, groupName, customKey, dataKey)
+    local raw = GetRaw(self, groupName, customKey)
+    -- 値が存在しない
+    if not raw then
+        return nil, nil
+    end
+    -- デフォルト値のみ定義（A = 'B'）
+    if type(raw) ~= 'table' then
+        return raw, 'Default'
+    end
+    local defaultValue, retValue, retKey
+    -- 定義（[1]の値）分ループ
+    for keyGroup,data in pairs(raw) do
+        -- 定義（[1]）以外を処理
+        if keyGroup ~= 1 then
+            local keys = {}
+            if type(data) ~= 'table' and not defaultValue and string.lower(keyGroup) == 'default' then
+                -- デフォルト値
+                defaultValue = data
+            else
+                -- キーのデータ一覧（通常はフォルダパスの一覧）を記録する
+                for k,v in pairs(data) do
+                    keys[#keys+1] = (type(v) == 'table') and v[1] or v
+                end
+                -- dataKeyがデータ一覧に存在すればキー名と定義値を取得する
+                if FindValue(keys, dataKey) then
+                    retKey = keyGroup
+                    retValue = raw[1] and raw[1][retKey] or nil
+                    break
+                end
+            end
+        end
+    end
+    -- Group.luaにdataKeyが定義されていない
+    if not retKey then
+        return defaultValue, 'Default'
+    end
+    -- 定義値、キー名を返却
+    return retValue, retKey
 end
 
 -- デフォルト値を設定
@@ -357,8 +407,9 @@ end
 -- ソートファイルを作成
 -- p1:ソートファイル名（Group）
 -- p2:グループをNameで指定したテキストでソート（true）
+-- p3:手動で追加するグループ
 local function CreateSortText(self, ...)
-    local sortName, groupNameSort = ...
+    local sortName, groupNameSort, addGroup = ...
     sortName = sortName or 'Group'
     groupNameSort = (groupNameSort == nil) and true or groupNameSort
     -- 1文字目が英数字以外の場合、ソートで後ろに行くように先頭にstring.char(126)をつける
@@ -370,6 +421,19 @@ local function CreateSortText(self, ...)
         f:destroy()
         return data
     end
+    -- 先頭に追加
+    if addGroup and addGroup.Before then
+        for group,data in pairs(addGroup.Before) do
+            f:PutLine("---"..group)
+            for i,song in pairs(data) do
+                local dir = song and song:GetSongDir() or nil
+                if dir then
+                    f:PutLine(string.gsub(dir, '/[^/]*Songs/(.+)', '%1'))
+                end
+            end
+        end
+    end
+    -- 通常ソート
     local groupList = {}
     for g, groupName in pairs(SONGMAN:GetSongGroupNames()) do
         groupList[#groupList+1] = {
@@ -433,6 +497,17 @@ local function CreateSortText(self, ...)
             end
         end
     end
+    -- 末尾に追加
+    if addGroup and addGroup.After then
+        for group,data in pairs(addGroup.After) do
+            for i,song in pairs(data) do
+                local dir = song and song:GetSongDir() or nil
+                if dir then
+                    f:PutLine(string.gsub(dir, '/[^/]*Songs/(.+)', '%1'))
+                end
+            end
+        end
+    end
     f:Close()
     f:destroy()
     SONGMAN:SetPreferredSongs(sortName)
@@ -449,10 +524,10 @@ return {
     MenuColor    = GetMenuColor,
     MeterType    = GetMeterType,
     LyricType    = GetLyricType,
+    Custom       = GetCustomValue,
     Sort         = CreateSortText,
     Default      = SetDefaultValue,
 }
-
 
 --[[
 Group_lua.lua
