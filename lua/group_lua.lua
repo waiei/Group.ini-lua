@@ -407,9 +407,8 @@ end
 -- ソートファイルを作成
 -- p1:ソートファイル名（Group）
 -- p2:グループをNameで指定したテキストでソート（true）
--- p3:手動で追加するグループ
 local function CreateSortText(self, ...)
-    local sortName, groupNameSort, addGroup = ...
+    local sortName, groupNameSort = ...
     sortName = sortName or 'Group'
     groupNameSort = (groupNameSort == nil) and true or groupNameSort
     -- 1文字目が英数字以外の場合、ソートで後ろに行くように先頭にstring.char(126)をつける
@@ -419,19 +418,7 @@ local function CreateSortText(self, ...)
     local f = RageFileUtil.CreateRageFile()
     if not f:Open(THEME:GetCurrentThemeDirectory()..'Other/SongManager '..sortName..'.txt', 2) then
         f:destroy()
-        return data
-    end
-    -- 先頭に追加
-    if addGroup and addGroup.Before then
-        for group,data in pairs(addGroup.Before) do
-            f:PutLine("---"..group)
-            for i,song in pairs(data) do
-                local dir = song and song:GetSongDir() or nil
-                if dir then
-                    f:PutLine(string.gsub(dir, '/[^/]*Songs/(.+)', '%1'))
-                end
-            end
-        end
+        return
     end
     -- 通常ソート
     local groupList = {}
@@ -494,17 +481,6 @@ local function CreateSortText(self, ...)
             f:PutLine("---"..groupName)
             for i,dir in pairs(dirList) do
                 f:PutLine(dir.Dir)
-            end
-        end
-    end
-    -- 末尾に追加
-    if addGroup and addGroup.After then
-        for group,data in pairs(addGroup.After) do
-            for i,song in pairs(data) do
-                local dir = song and song:GetSongDir() or nil
-                if dir then
-                    f:PutLine(string.gsub(dir, '/[^/]*Songs/(.+)', '%1'))
-                end
             end
         end
     end
