@@ -1,4 +1,15 @@
---[[ Group_Ini v20210818 ]]
+--[[ Group_Ini v20210822 ]]
+
+-- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
+local function _FindValue_(tab, value)
+	for key, name in pairs(tab) do
+		if value == name then
+			return key
+		end
+	end
+
+	return nil
+end
 
 -- 特殊な変換が必要なキー一覧
 local spKeyList = {
@@ -74,7 +85,7 @@ local function MergeIniValue(data)
         for dataKey, dataValue in pairs(data) do
             local lowDataKey = string.lower(dataKey)
             -- 特殊処理キー一覧に存在するキーかどうか
-            if FindValue(v, lowDataKey) then
+            if _FindValue_(v, lowDataKey) then
                 checkData[lowDataKey] = {}
                 -- テーブルデータの場合、[1]に定義したキー名の配列が存在する
                 if type(dataValue) == 'table' then
@@ -90,7 +101,7 @@ local function MergeIniValue(data)
                     checkData[lowDataKey] = dataValue
                     checkDefine[lowDataKey] = {}
                 end
-                -- 変換目のデータは削除
+                -- 変換項目のデータは削除
                 data[lowDataKey] = nil
             end
         end
@@ -106,7 +117,7 @@ local function MergeIniValue(data)
 end
 
 -- 値を解析する
-local function SetIniValue(key, value)
+local function SetIniValue(value)
     local keyList = {}
     local data = {}
     local values = split(':', value)
@@ -121,7 +132,7 @@ local function SetIniValue(key, value)
                     data[keyName][#data[keyName]+1] = sub[j]
                 end
             else
-                data[keyName] = sub[1]
+                data[keyName] = ''
             end
             keyList[keyName] = sub[1]
         end
@@ -131,7 +142,7 @@ local function SetIniValue(key, value)
     -- #AAA:BBB; 形式でBBBの部分は | で区切られていない
     if #values == 1 and type(data.Default) ~= 'table' then
         -- 値をそのまま返却
-        return data.Default
+        return data[1].Default
     end
     -- テーブルデータで返却
     return data
@@ -164,7 +175,7 @@ return {
                 -- 現在のパラメータを読み取り中の場合
                 if current then
                     -- 現在のパラメータの内容を確定
-                    data[current] = SetIniValue(current, values)
+                    data[current] = SetIniValue(values)
                 end
                 -- 次のパラメータのキーを設定する
                 current = string.lower(key)
@@ -179,7 +190,7 @@ return {
         f:destroy()
         -- 最後のパラメータが読み取り途中の場合は内容を確定する
         if current then
-            data[current] = SetIniValue(current, values)
+            data[current] = SetIniValue(values)
         end
         return MergeIniValue(data)
     end,

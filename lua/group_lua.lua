@@ -1,4 +1,15 @@
---[[ Group_Lua v20210818 ]]
+--[[ Group_Lua v20210906 ]]
+
+-- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
+local function _FindValue_(tab, value)
+	for key, name in pairs(tab) do
+		if value == name then
+			return key
+		end
+	end
+
+	return nil
+end
 
 -- Rawデータ
 local groupRaw = {}
@@ -231,7 +242,8 @@ local function Scan(self, ...)
     forceReload = (forceReload ~= nil) and forceReload or false
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
-        for i, group in pairs(SONGMAN:GetSongGroupNames()) do
+        local groups = SONGMAN and SONGMAN:GetSongGroupNames() or {}    -- 5.0.7RC対策
+        for i, group in pairs(groups) do
             Scan(self, forceReload, group)
         end
         return
@@ -287,7 +299,7 @@ end
 -- グループカラーを取得
 -- p1:グループ名
 local function GetGroupColor(self, groupName)
-    if not FindValue(SONGMAN:GetSongGroupNames(), groupName) then
+    if not _FindValue_(SONGMAN:GetSongGroupNames(), groupName) then
         return default.GroupColor or Color('White')
     end
     return (groupName and groupName ~= '')
@@ -342,17 +354,29 @@ end
 
 -- song型からLYRICTYPEを取得
 -- p1:Song
+-- この関数は文字列r1と関数/テーブルr2を返却します(return r1, r2)
+-- 関数定義をしている場合、r1は互換性維持のためにデフォルト値を返却します
+-- テーブル定義をしている場合、r1は配列の最初の値を返却します
+-- 関数/テーブル以外の場合はr1の方に返却し、r2はnilを返します
+-- 関数/テーブル未対応のテーマではr1だけで判定する想定です
 local function GetLyricType(self, song)
-    return groupParams.LyricType[GetSongLowerDir(song)]
-        or groupParams.LyricType[song:GetGroupName()]
-        or default.LyricType
+    local lt = groupParams.LyricType[GetSongLowerDir(song)] or groupParams.LyricType[song:GetGroupName()]
+    if not lt then
+        return default.LyricType, nil
+    elseif type(lt) == 'function' then
+        return default.LyricType, lt
+    elseif type(lt) == 'table' then
+        return lt[1] or default.LyricType, lt
+    else
+        return lt, nil
+    end
 end
 
 -- カスタムパラメータから指定キーの定義と値をテーブルで取得
 -- ※毎回GetRawが行われるので複数のデータを一気に取得することを想定していません
--- p1:string
--- p2:string
--- p3:string
+-- p1:string groupName グループフォルダ名
+-- p2:string customKey Group.ini/luaに定義したカスタムキー名
+-- p3:string dataKey 取得対象（通常は楽曲フォルダ名）
 -- 定義値, キー名 を返却
 local function GetCustomValue(self, groupName, customKey, dataKey)
     local raw = GetRaw(self, groupName, customKey)
@@ -365,30 +389,28 @@ local function GetCustomValue(self, groupName, customKey, dataKey)
         return raw, 'Default'
     end
     local defaultValue, retValue, retKey
+    -- デフォルト値
+    defaultValue = raw[1] and raw[1].Default or nil
     -- 定義（[1]の値）分ループ
     for keyGroup,data in pairs(raw) do
         -- 定義（[1]）以外を処理
         if keyGroup ~= 1 then
             local keys = {}
-            if type(data) ~= 'table' and not defaultValue and string.lower(keyGroup) == 'default' then
-                -- デフォルト値
-                defaultValue = data
-            else
-                -- キーのデータ一覧（通常はフォルダパスの一覧）を記録する
-                for k,v in pairs(data) do
-                    keys[#keys+1] = (type(v) == 'table') and v[1] or v
-                end
-                -- dataKeyがデータ一覧に存在すればキー名と定義値を取得する
-                if FindValue(keys, dataKey) then
-                    retKey = keyGroup
-                    retValue = raw[1] and raw[1][retKey] or nil
-                    break
-                end
+            -- キーのデータ一覧（通常はフォルダパスの一覧）を記録する
+            for k,v in pairs(data) do
+                keys[#keys+1] = (type(v) == 'table') and v[1] or v
+            end
+            -- dataKeyがデータ一覧に存在すればキー名と定義値を取得する
+            if _FindValue_(keys, dataKey) then
+                retKey = keyGroup
+                retValue = raw[1] and raw[1][retKey] or nil
+                break
             end
         end
     end
     -- Group.luaにdataKeyが定義されていない
-    if not retKey then
+    -- ただし、DefaultのdataKeyが定義されている場合はここでreturnしない
+    if not retKey and not raw.Default then
         return defaultValue, 'Default'
     end
     -- 定義値、キー名を返却
