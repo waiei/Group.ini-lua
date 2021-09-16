@@ -1,4 +1,4 @@
---[[ Group_Ini v20210822 ]]
+--[[ Group_Ini v20210916 ]]
 
 -- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
 local function _FindValue_(tab, value)
@@ -108,7 +108,11 @@ local function MergeIniValue(data)
         -- 一つ以上データが存在していれば取得したデータを加工
         -- 加工処理はfunctionListテーブルを参照
         for tmpK,tmpV in pairs(checkDefine) do
-            data[string.lower(k)] = functionList[k] and functionList[k](checkDefine, checkData) or nil
+            if functionList[k] then
+                data[string.lower(k)] = functionList[k](checkDefine, checkData)
+            else
+                data[string.lower(k)] = nil
+            end
            break
         end
     end
