@@ -1,4 +1,7 @@
---[[ Group_Lua v20210906 ]]
+--[[ Group_Lua v20211116]]
+
+-- このファイルの相対パス
+local relativePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
 
 -- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
 local function _FindValue_(tab, value)
@@ -13,49 +16,25 @@ end
 
 -- Rawデータ
 local groupRaw = {}
--- 管理用変数に保存対象のキー
-local cacheSupportKeys = {
-    'Name',
-    'GroupColor',
-    'OriginalName',
-    'MenuColor',
-    'MeterType',
-    'LyricType',
-}
--- 管理用変数
-local groupParams = {}
-for i=1,#cacheSupportKeys do
-    groupParams[cacheSupportKeys[i]] = {}
-end
+-- 取得用データ(Rawを取得しやすい形に変える)
+local groupData = {}
+-- 値の型（number, string, color, table）
+local keyType = {}
+-- 未指定時の定義
+local defaultDefine = {}
 
--- デフォルト値
-local default = {
-    GroupColor = nil,
-    MenuColor  = nil,
-    MeterType  = 'DDR',
-    LyricType  = 'Default',
-}
-
--- 値の型（文字列のキーは定義不要）
-local valueType = {
-    GroupColor = 'color',
-    MenuColor  = 'color',
-}
-
+-- 検索対象の楽曲フォルダ
 local songPathList = {
     '/Songs/',
     '/AdditionalSongs/',
 }
-
--- このファイルの相対パス
-local relativePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
 
 -- Group.ini処理用
 -- 同じディレクトリにgroup_ini.luaがある場合のみ読みこみ
 local groupIniFile = 'group_ini.lua'
 local groupIni
 if FILEMAN:DoesFileExist(relativePath..groupIniFile) then
-    groupIni = LoadActor(groupIniFile)
+    groupIni = dofile(relativePath..groupIniFile)
 end
 
 -- ファイルを検索してパスを返却（大文字小文字を無視）
@@ -93,10 +72,10 @@ local function ConvertColor(input)
         }
     end
     -- カラーとして変換できない
-    return nil
+    return {1.0, 1.0, 1.0, 1.0}
 end
 
--- Songからパスを小文字で取得（/...Songs/は取得しない）
+-- Songからパスを小文字で取得（グループフォルダ名/楽曲フォルダ名/ が返却される）
 local function GetSongLowerDir(song)
     return string.lower(string.gsub(song:GetSongDir(), '/[^/]*Songs/(.+)', '%1'))
 end
@@ -110,64 +89,24 @@ local function LoadGroupIni(filePath)
     end
 end
 
--- グループ単位で情報を持つことができるパラメータを管理用変数に保存
-local function SetGroupParams(groupName, key, data)
-    -- 色として扱うパラメータ
-    if valueType[key] and valueType[key] == 'color' then
-        local convertedColor = ConvertColor(data)
-        if convertedColor then
-            groupParams[key][groupName] = convertedColor
-        else
-            groupParams[key][groupName] = default[key]
+-- 値をフォーマット
+local function FormatValue(data, key)
+    if keyType[key] then
+        if keyType[key] == 'color' then
+            return ConvertColor(data)
+        elseif keyType[key] == 'string' and type(data) ~= 'string' then
+            return ''
+        elseif keyType[key] == 'number' and type(data) ~= 'number' then
+            return 0
+        elseif keyType[key] == 'table' and type(data) ~= 'table' then
+            return {}
+        elseif type(data) == 'function' and keyType[key] ~= 'function' then
+            -- 種別がfunction以外で値がfunctionの場合実行する
+            return data()
         end
-    -- 文字列として扱うパラメータ
-    else
-        groupParams[key][groupName] = data
+        return data
     end
-end
-
--- 楽曲単位で情報を持つことができるパラメータを解析して管理用変数に保存
-local function SetMultiParams(groupName, key, data)
-    -- グループ単位、楽曲単位どちらで定義しているかチェック
-    -- 色として扱うパラメータ
-    if valueType[key] and valueType[key] == 'color' then
-        groupParams[key][groupName] = ConvertColor(data)
-        -- ひとつのカラーが定義されている場合、グループ単位の定義
-        if groupParams[key][groupName] then
-            return
-        end
-    -- 文字列として扱うパラメータ
-    else
-        -- 値が文字列の場合はグループ単位の定義
-        if type(data) == 'string' then
-            groupParams[key][groupName] = data
-            return
-        end
-    end
-    -- 楽曲単位の定義
-    -- 定義
-    local valueList = {Default = default[key] or groupName}
-    -- 色のデフォルト値を設定(02 Colors.lua)
-    if valueType[key] and valueType[key] == 'color' then
-        for k,v in pairs(Color) do
-            valueList[k] = v
-        end
-    end
-    -- 定義を設定
-    for k,v in pairs(data[1] or {}) do
-        valueList[k] = (valueType[key] == 'color') and ConvertColor(v) or v
-    end
-    -- グループデフォルト
-    groupParams[key][groupName] = valueList.Default
-    -- 定義されてるデータ分ループ
-    for k,v in pairs(valueList) do
-        if k ~= 'Default' then  -- デフォルトは無視
-            for s=1, #(data[k] or {}) do
-                local folder = (type(data[k][s]) == 'table') and data[k][s][1] or data[k][s]
-                groupParams[key][string.lower(string.format('%s/%s/', groupName, folder or ''))] = v
-            end
-        end
-    end
+    return nil
 end
 
 -- Grouop.luaまたはGroup.iniを読み込んでRawデータとして保存
@@ -211,7 +150,7 @@ end
 local function GetRaw(self, groupName, ...)
     local key = ...
     -- キーを指定していない場合はグループの情報か空テーブルを返却
-    if not key then
+    if not key or type(key) ~= 'string' then
         return groupRaw[groupName] or {}
     end
     -- キーの指定がある場合
@@ -234,196 +173,189 @@ local function GetRaw(self, groupName, ...)
     return nil
 end
 
+-- パラメータを指定して一時変数に格納
+-- groupData[key][グループフォルダ名] = デフォルト値
+-- groupData[key][小文字（グループフォルダ名/楽曲フォルダ名/）] = {楽曲単位の値, 追加パラメータ}
+local function SetData(groupName, key)
+    if not groupData[key] then
+        groupData[key] = {}
+    end
+    local data = GetRaw(nil, groupName, key)
+    if data then
+        local lGroupName = string.lower(groupName)
+        -- デフォルトの定義を設定
+        local define = {}
+        -- =で代入するとdefineを加工した時に元の配列が書き換えられるのでひとつづつ入れ直す
+        for k,v in pairs(defaultDefine[key] or {}) do
+            define[k] = v
+        end
+
+        if type(data) ~= 'table' or (type(data) == 'table' and data[1] and type(data[1]) == 'number' and keyType[key] == 'color') then
+            -- グループ単位で定義
+            -- デフォルト値
+            groupData[key][groupName] = FormatValue(data, key)
+        else
+            -- フォルダ単位で定義
+            -- 定義部分を取得
+            for k,v in pairs(data[1] or {}) do
+                define[k] = v
+            end
+            -- デフォルト値
+            groupData[key][groupName] = FormatValue(define.Default or nil, key)
+            -- 各フォルダ
+            for k,_ in pairs(define or {}) do
+                if k ~= 'default' and data[k] and type(data[k]) == 'table' then
+                    for _,v in pairs(data[k]) do
+                        if type(v) == 'string' then
+                            -- フォルダ名のみを定義
+                            groupData[key][lGroupName..'/'..string.lower(v)..'/'] = {FormatValue(define[k], key), {}}
+                        elseif type(v) == 'table' then
+                            -- 楽曲単位でパラメータを定義
+                            local folder = v[1] or nil
+                            if folder then
+                                groupData[key][lGroupName..'/'..string.lower(folder)..'/'] = {FormatValue(define[k], key), v[2] or {}}
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 取得対象のキーを追加
+local function AddTargetKey(self, key, typeString, ...)
+    local define = ...
+    keyType[key] = typeString
+    if define and type(define) == 'table' then
+        defaultDefine[key] = define
+        if not define.Default then
+            defaultDefine[key].Default = FormatValue(nil, key)
+        end
+    else
+        defaultDefine[key] = {Default = FormatValue(define or nil, key)}
+    end
+end
+
 -- フォルダをスキャン
--- p1:グループ名 (false)
--- p2:グループ名 (nil)
+-- p1:グループ名 (nil)
 local function Scan(self, ...)
-    local forceReload, groupName = ...
-    forceReload = (forceReload ~= nil) and forceReload or false
+    local groupName = ...
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
         local groups = SONGMAN and SONGMAN:GetSongGroupNames() or {}    -- 5.0.7RC対策
         for i, group in pairs(groups) do
-            Scan(self, forceReload, group)
+            Scan(self, group)
         end
         return
     end
-    
-    local groupLuaPath = SearchFile(groupName..'/', 'group.lua')
 
-    -- 強制再読み込みが無効で、すでに読み込み済みの場合は処理を行わない（Group.iniのみ）
-    local hasData = false
-    for k,v in pairs(GetRaw(self, groupName)) do
-        if v then
-            hasData = true
-            break
-        end
-    end
-    if not groupLuaPath and hasData and not forceReload then
-        return
-    end
-    
     -- 読みこんでRawに保存
+    local groupLuaPath = SearchFile(groupName..'/', 'group.lua')
     local groupIniPath = (not groupLuaPath) and SearchFile(groupName..'/', 'group.ini') or nil
     SetRaw(groupName, groupLuaPath, groupIniPath)
-    
-    -- グループごとに情報を持つことができるパラメータを設定
-    local groupParams = {
-        'Name',
-        'GroupColor',
-    }
-    for i=1, #groupParams do
-        SetGroupParams(groupName, groupParams[i], GetRaw(self, groupName, groupParams[i]) or nil)
+
+    -- 情報を取得
+    groupData[groupName] = {}
+    for key,_ in pairs(keyType) do
+        SetData(groupName, key)
     end
-    
-    -- 楽曲ごとに情報を持つことができるパラメータを設定
-    local multiParams = {
-        'OriginalName',
-        'MenuColor',
-        'MeterType',
-        'LyricType',
-    }
-    for i=1, #multiParams do
-        SetMultiParams(groupName, multiParams[i], GetRaw(self, groupName, multiParams[i]) or {})
+end
+
+local function GetFallback(key)
+    if not defaultDefine[key] then
+        return nil
     end
+    return FormatValue(defaultDefine[key].Default or nil)
+end
+
+-- カスタムパラメータから指定キーの定義と値をテーブルで取得
+-- p1:string/song groupOrSong グループフォルダ名の文字列またはsong型
+-- p2:string key Group.ini/luaに定義したカスタムキー名
+-- 定義値, 曲単位のパラメータ配列 を返却
+local function GetCustomValue(self, groupOrSong, key)
+    local song = (type(groupOrSong) ~= 'string') and groupOrSong or nil
+    local groupName = song and song:GetGroupName() or groupOrSong
+    if not groupName or groupName == '' then
+        return nil, {}
+    end
+    if not groupData[key] then
+        SetData(groupName, key)
+    end
+    local data = song and groupData[key][GetSongLowerDir(song)] or {groupData[key][groupName], {}}
+    data[1] = data[1] or (defaultDefine[key] and defaultDefine[key].Default or nil)
+    return data[1], data[2]
 end
 
 -- グループ名を取得
 -- p1:グループ名
+-- 曲単位のパラメータ配列 は破棄
 local function GetGroupName(self, groupName)
-    return (groupName and groupName ~= '')
-        and groupParams.Name[groupName]
-        or SONGMAN:ShortenGroupName(groupName)
+    return groupData.Name[groupName] or SONGMAN:ShortenGroupName(groupName) or nil
 end
 
 -- グループカラーを取得
 -- p1:グループ名
+-- 曲単位のパラメータ配列 は破棄
 local function GetGroupColor(self, groupName)
-    if not _FindValue_(SONGMAN:GetSongGroupNames(), groupName) then
-        return default.GroupColor or Color('White')
-    end
-    return (groupName and groupName ~= '')
-        and groupParams.GroupColor[groupName]
-        or default.GroupColor
-        or SONGMAN:GetSongGroupColor(groupName)
+    return groupData.GroupColor[groupName] or nil
 end
 
 -- URLを取得
 -- p1:グループ名
+-- 曲単位のパラメータ配列 は破棄
 local function GetUrl(self, groupName)
-    return GetRaw(self, groupName, 'Url') or ''
+    return groupData.Url[groupName] or nil
 end
 
 -- コメントを取得
 -- p1:グループ名
--- p2:改行を有効（true）
-local function GetComment(self, groupName, ...)
-    local enableLineBreaks = ...
-    enableLineBreaks = (enableLineBreaks == nil) and true or enableLineBreaks
-    local comment = GetRaw(self, groupName, 'Comment') or ''
-    if enableLineBreaks then
-        return comment
-    end
-    return string.gsub(comment, '(.-)[\n]', '%1 ')
+-- 曲単位のパラメータ配列 は破棄
+local function GetComment(self, groupName)
+    return groupData.Comment[groupName] or nil
 end
 
 -- song型からORIGINALNAMEを取得
 -- p1:Song
+-- 曲単位のパラメータ配列 は破棄
 local function GetOriginalName(self, song)
-    return groupParams.OriginalName[GetSongLowerDir(song)] 
-        or groupParams.OriginalName[song:GetGroupName()]
+    return groupData.OriginalName[GetSongLowerDir(song)]
+        and groupData.OriginalName[GetSongLowerDir(song)][1]
+        or groupData.OriginalName[song:GetGroupName()]
         or song:GetGroupName()
+        or nil
 end
 
 -- song型からMETERTYPEを取得
 -- p1:Song
+-- 曲単位のパラメータ配列 は破棄
 local function GetMeterType(self, song)
-    return groupParams.MeterType[GetSongLowerDir(song)] 
-        or groupParams.MeterType[song:GetGroupName()]
-        or default.MeterType
+    return groupData.MeterType[GetSongLowerDir(song)]
+        and groupData.MeterType[GetSongLowerDir(song)][1]
+        or groupData.MeterType[song:GetGroupName()]
+        or defaultDefine.MeterType.Default
+        or nil
 end
 
 -- song型からMENUCOLORを取得
 -- p1:Song
+-- 曲単位のパラメータ配列 は破棄
 local function GetMenuColor(self, song)
-    return groupParams.MenuColor[GetSongLowerDir(song)]
-        or groupParams.MenuColor[song:GetGroupName()]
-        or default.MenuColor
-        or SONGMAN:GetSongColor(song)
+    return groupData.MenuColor[GetSongLowerDir(song)]
+        and groupData.MenuColor[GetSongLowerDir(song)][1]
+        or groupData.MenuColor[song:GetGroupName()]
+        or defaultDefine.MenuColor.Default
+        or nil
 end
 
 -- song型からLYRICTYPEを取得
 -- p1:Song
--- この関数は文字列r1と関数/テーブルr2を返却します(return r1, r2)
--- 関数定義をしている場合、r1は互換性維持のためにデフォルト値を返却します
--- テーブル定義をしている場合、r1は配列の最初の値を返却します
--- 関数/テーブル以外の場合はr1の方に返却し、r2はnilを返します
--- 関数/テーブル未対応のテーマではr1だけで判定する想定です
 local function GetLyricType(self, song)
-    local lt = groupParams.LyricType[GetSongLowerDir(song)] or groupParams.LyricType[song:GetGroupName()]
-    if not lt then
-        return default.LyricType, nil
-    elseif type(lt) == 'function' then
-        return default.LyricType, lt
-    elseif type(lt) == 'table' then
-        return lt[1] or default.LyricType, lt
-    else
-        return lt, nil
-    end
-end
-
--- カスタムパラメータから指定キーの定義と値をテーブルで取得
--- ※毎回GetRawが行われるので複数のデータを一気に取得することを想定していません
--- p1:string groupName グループフォルダ名
--- p2:string customKey Group.ini/luaに定義したカスタムキー名
--- p3:string dataKey 取得対象（通常は楽曲フォルダ名）
--- 定義値, キー名 を返却
-local function GetCustomValue(self, groupName, customKey, dataKey)
-    local raw = GetRaw(self, groupName, customKey)
-    -- 値が存在しない
-    if not raw then
-        return nil, nil
-    end
-    -- デフォルト値のみ定義（A = 'B'）
-    if type(raw) ~= 'table' then
-        return raw, 'Default'
-    end
-    local defaultValue, retValue, retKey
-    -- デフォルト値
-    defaultValue = raw[1] and raw[1].Default or nil
-    -- 定義（[1]の値）分ループ
-    for keyGroup,data in pairs(raw) do
-        -- 定義（[1]）以外を処理
-        if keyGroup ~= 1 then
-            local keys = {}
-            -- キーのデータ一覧（通常はフォルダパスの一覧）を記録する
-            for k,v in pairs(data) do
-                keys[#keys+1] = (type(v) == 'table') and v[1] or v
-            end
-            -- dataKeyがデータ一覧に存在すればキー名と定義値を取得する
-            if _FindValue_(keys, dataKey) then
-                retKey = keyGroup
-                retValue = raw[1] and raw[1][retKey] or nil
-                break
-            end
-        end
-    end
-    -- Group.luaにdataKeyが定義されていない
-    -- ただし、DefaultのdataKeyが定義されている場合はここでreturnしない
-    if not retKey and not raw.Default then
-        return defaultValue, 'Default'
-    end
-    -- 定義値、キー名を返却
-    return retValue, retKey
-end
-
--- デフォルト値を設定
--- p1:キー
--- p2:値
--- 例えばMenuColorのデフォルトを白にしたい場合、xx:Default('MenuColor', Color('White'))
-local function SetDefaultValue(self, key, value)
-    default[key] = value
-    return value
+    local data = song
+            and groupData.LyricType[GetSongLowerDir(song)]
+            or {groupData.LyricType[song:GetGroupName()], {}}
+    data[1] = data[1] or (defaultDefine.LyricType and defaultDefine.LyricType.Default or nil)
+    return data[1], data[2]
 end
 
 -- ソートファイルを作成
@@ -444,7 +376,7 @@ local function CreateSortText(self, ...)
     end
     -- 通常ソート
     local groupList = {}
-    for g, groupName in pairs(SONGMAN:GetSongGroupNames()) do
+    for _, groupName in pairs(SONGMAN:GetSongGroupNames()) do
         groupList[#groupList+1] = {
             Original = groupName,
             Sort     = string.lower(groupNameSort and Adjust(GetGroupName(self, groupName)) or groupName),
@@ -468,7 +400,7 @@ local function CreateSortText(self, ...)
             sortList[k] = tonumber(v)
         end
         -- ソート順序を設定
-        for k,v in pairs(sortList) do
+        for k,_ in pairs(sortList) do
             if k ~= 'Default' then  -- デフォルトは無視
                 for i, dir in pairs(sortData[k] or {}) do
                     local folder = (type(dir) == 'table') and dir[1] or dir
@@ -479,7 +411,7 @@ local function CreateSortText(self, ...)
         -- ソート用のテーブル作成
         local dirList = {}
         local dirCount = 0
-        for i, song in pairs(SONGMAN:GetSongsInGroup(groupName)) do
+        for _, song in pairs(SONGMAN:GetSongsInGroup(groupName)) do
             local dir = song:GetSongDir()
             -- 楽曲フォルダ名（小文字）を取得
             local key = string.lower(string.gsub(dir, '/[^/]*Songs/[^/]+/([^/]+)/', '%1'))
@@ -501,7 +433,7 @@ local function CreateSortText(self, ...)
                                     end
                                 end)
             f:PutLine("---"..groupName)
-            for i,dir in pairs(dirList) do
+            for _,dir in pairs(dirList) do
                 f:PutLine(dir.Dir)
             end
         end
@@ -510,6 +442,16 @@ local function CreateSortText(self, ...)
     f:destroy()
     SONGMAN:SetPreferredSongs(sortName)
 end
+
+-- 初期化
+AddTargetKey(nil, 'Name',         'string')
+AddTargetKey(nil, 'GroupColor',   'color')
+AddTargetKey(nil, 'Url',          'string')
+AddTargetKey(nil, 'Comment',      'string')
+AddTargetKey(nil, 'OriginalName', 'string')
+AddTargetKey(nil, 'MeterType',    'string', {Default = 'DDR', DDRX = 'DDR X', ITG = 'ITG'})
+AddTargetKey(nil, 'MenuColor',    'color')
+AddTargetKey(nil, 'LyricType',    'mixed', {Default = 'Default'})
 
 return {
     Scan         = Scan,
@@ -524,7 +466,8 @@ return {
     LyricType    = GetLyricType,
     Custom       = GetCustomValue,
     Sort         = CreateSortText,
-    Default      = SetDefaultValue,
+    AddKey       = AddTargetKey,
+    Fallback     = GetFallback,
 }
 
 --[[
