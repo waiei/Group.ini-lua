@@ -1,4 +1,4 @@
---[[ Group_Lua v20211124]]
+--[[ Group_Lua v20211129]]
 
 -- このファイルの相対パス
 local relativePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
@@ -38,6 +38,7 @@ if FILEMAN:DoesFileExist(relativePath..groupIniFile) then
 end
 
 -- ファイルを検索してパスを返却（大文字小文字を無視）
+-- 外部呼出し不可
 -- p1:グループ名
 -- p2:ファイル名
 local function SearchFile(groupName, fileName)
@@ -53,6 +54,7 @@ local function SearchFile(groupName, fileName)
 end
 
 -- カラーとして変換
+-- 外部呼出し不可
 local function ConvertColor(input)
     -- 文字列
     if type(input) == 'string' then
@@ -76,11 +78,13 @@ local function ConvertColor(input)
 end
 
 -- Songからパスを小文字で取得（グループフォルダ名/楽曲フォルダ名/ が返却される）
+-- 外部呼出し不可
 local function GetSongLowerDir(song)
     return string.lower(string.gsub(song:GetSongDir(), '/[^/]*Songs/(.+)', '%1'))
 end
 
 -- Group.iniを読み込む
+-- 外部呼出し不可
 local function LoadGroupIni(filePath)
     if filePath and groupIni then
         return groupIni:Load(filePath)
@@ -90,6 +94,7 @@ local function LoadGroupIni(filePath)
 end
 
 -- 値をフォーマット
+-- 外部呼出し不可
 local function FormatValue(data, key)
     if keyType[key] then
         if keyType[key] == 'color' then
@@ -110,6 +115,7 @@ local function FormatValue(data, key)
 end
 
 -- Grouop.luaまたはGroup.iniを読み込んでRawデータとして保存
+-- 外部呼出し不可
 local function SetRaw(groupName, groupLuaPath, groupIniPath)
     groupRaw[groupName] = nil
     if groupLuaPath then
@@ -146,7 +152,7 @@ end
 
 -- グループ情報のテーブルを取得
 -- p1:グループ名
--- p2:取得するキー（nil）
+-- p2:取得するキー（nilの場合全データを取得）
 local function GetRaw(self, groupName, ...)
     local key = ...
     -- キーを指定していない場合はグループの情報か空テーブルを返却
@@ -173,7 +179,31 @@ local function GetRaw(self, groupName, ...)
     return nil
 end
 
+-- グループの定義部分を取得
+-- p1:グループ名
+-- p2:取得するキー
+local function GetDefine(self, groupName, key)
+    local define = {}
+    for k,v in pairs(defaultDefine[key]) do
+        define[string.lower(k)] = v
+    end
+    local raw = GetRaw(self, groupName, key)
+    if not raw then
+        return define
+    end
+    -- テーブル以外、またはテーブルだがcolor型
+    if type(raw) ~= 'table' or (keyType[key] == 'color' and #raw == 4) then
+        define.default = FormatValue(raw, key)
+    else
+        for k,v in pairs(raw[1] or {}) do
+            define[string.lower(k)] = v
+        end
+    end
+    return define
+end
+
 -- パラメータを指定して一時変数に格納
+-- 外部呼出し不可
 -- groupData[key][グループフォルダ名] = デフォルト値
 -- groupData[key][小文字（グループフォルダ名/楽曲フォルダ名/）][定義名] = {楽曲単位の値, 追加パラメータ}
 local function SetData(groupName, key)
@@ -184,43 +214,42 @@ local function SetData(groupName, key)
     if data then
         local lGroupName = string.lower(groupName)
         -- デフォルトの定義を設定
-        local define = {}
-        -- =で代入するとdefineを加工した時に元の配列が書き換えられるのでひとつづつ入れ直す
-        for k,v in pairs(defaultDefine[key] or {}) do
-            define[k] = v
+        local define = GetDefine(nil, groupName, key)
+        -- デフォルト値
+        groupData[key][groupName] = FormatValue(define.default or nil, key)
+
+        -- デフォルト定義のみの場合はここで処理終了
+        if type(data) ~= 'table' or (keyType[key] == 'color' and #data == 4) then
+            return
         end
 
-        if type(data) ~= 'table' or (type(data) == 'table' and data[1] and type(data[1]) == 'number' and keyType[key] == 'color') then
-            -- グループ単位で定義
-            -- デフォルト値
-            groupData[key][groupName] = FormatValue(data, key)
-        else
-            -- フォルダ単位で定義
-            -- 定義部分を取得
-            for k,v in pairs(data[1] or {}) do
-                define[k] = v
-            end
-            -- デフォルト値
-            groupData[key][groupName] = FormatValue(define.Default or nil, key)
-            -- 各フォルダ
-            for k,_ in pairs(define or {}) do
-                if k ~= 'default' and data[k] and type(data[k]) == 'table' then
-                    for _,v in pairs(data[k]) do
-                        if type(v) == 'string' then
-                            -- フォルダ名のみを定義
-                            if not groupData[key][lGroupName..'/'..string.lower(v)..'/'] then
-                                groupData[key][lGroupName..'/'..string.lower(v)..'/'] = {}
+        -- フォルダ単位で定義
+        -- 各フォルダ
+        for k,_ in pairs(define or {}) do
+            local lk = string.lower(k)
+            if k ~= 'default' and data[k] and type(data[k]) == 'table' then
+                for _,v in pairs(data[k]) do
+                    if type(v) == 'string' then
+                        -- フォルダ名のみを定義
+                        if not groupData[key][lGroupName..'/'..string.lower(v)..'/'] then
+                            groupData[key][lGroupName..'/'..string.lower(v)..'/'] = {}
+                        end
+                        groupData[key][lGroupName..'/'..string.lower(v)..'/'][lk] = {FormatValue(define[lk], key), {}}
+                    elseif type(v) == 'table' then
+                        -- 楽曲単位でパラメータを定義
+                        local folder = v[1] or nil
+                        if folder then
+                            if not groupData[key][lGroupName..'/'..string.lower(folder)..'/'] then
+                                groupData[key][lGroupName..'/'..string.lower(folder)..'/'] = {}
                             end
-                            groupData[key][lGroupName..'/'..string.lower(v)..'/'][k] = {FormatValue(define[k], key), {}}
-                        elseif type(v) == 'table' then
-                            -- 楽曲単位でパラメータを定義
-                            local folder = v[1] or nil
-                            if folder then
-                                if not groupData[key][lGroupName..'/'..string.lower(folder)..'/'] then
-                                    groupData[key][lGroupName..'/'..string.lower(folder)..'/'] = {}
+                            -- 数字キーを削除、大文字小文字を区別させない
+                            local params = {}
+                            for vk,vv in pairs(v) do
+                                if type(vk) ~= 'number' then
+                                    params[string.lower(vk)] = vv
                                 end
-                                groupData[key][lGroupName..'/'..string.lower(folder)..'/'][k] = {FormatValue(define[k], key), v[2] or {}}
                             end
+                            groupData[key][lGroupName..'/'..string.lower(folder)..'/'][lk] = {FormatValue(define[lk], key), params or {}}
                         end
                     end
                 end
@@ -230,16 +259,22 @@ local function SetData(groupName, key)
 end
 
 -- 取得対象のキーを追加
+-- p1:登録するキー
+-- p2:キーの型の種類（number/string/table/mixed/functionのいずれか）
+-- p3:デフォルトの定義（未指定の場合、p2の値によって決まる）
 local function AddTargetKey(self, key, typeString, ...)
     local define = ...
     keyType[key] = typeString
     if define and type(define) == 'table' then
-        defaultDefine[key] = define
-        if not define.Default then
-            defaultDefine[key].Default = FormatValue(nil, key)
+        defaultDefine[key] = {}
+        for k,v in pairs(define) do
+            defaultDefine[key][string.lower(k)] = v
+        end
+        if not defaultDefine[key].default then
+            defaultDefine[key].default = FormatValue(nil, key)
         end
     else
-        defaultDefine[key] = {Default = FormatValue(define or nil, key)}
+        defaultDefine[key] = {default = FormatValue(define or nil, key)}
     end
 end
 
@@ -268,11 +303,13 @@ local function Scan(self, ...)
     end
 end
 
+-- キーのデフォルト値を取得
+-- p1:取得するキー
 local function GetFallback(key)
     if not defaultDefine[key] then
         return nil
     end
-    return FormatValue(defaultDefine[key].Default or nil)
+    return FormatValue(defaultDefine[key].default or nil)
 end
 
 -- カスタムパラメータから指定キーの定義と値をテーブルで取得
@@ -299,11 +336,11 @@ local function GetCustomValue(self, groupOrSong, key, ...)
                 break
             end
         end
-        data = groupData[key][GetSongLowerDir(song)][defineName]
+        data = groupData[key][GetSongLowerDir(song)][string.lower(defineName)]
     else
         data = {groupData[key][groupName], {}}
     end
-    data[1] = data[1] or (defaultDefine[key] and defaultDefine[key].Default or nil)
+    data[1] = data[1] or (defaultDefine[key] and defaultDefine[key].default or nil)
     return data[1], data[2]
 end
 
@@ -311,34 +348,37 @@ end
 -- p1:グループ名
 -- 曲単位のパラメータ配列 は破棄
 local function GetGroupName(self, groupName)
-    return groupData.Name[groupName] or SONGMAN:ShortenGroupName(groupName) or nil
+    return groupData.Name and (groupData.Name[groupName] or SONGMAN:ShortenGroupName(groupName)) or nil
 end
 
 -- グループカラーを取得
 -- p1:グループ名
 -- 曲単位のパラメータ配列 は破棄
 local function GetGroupColor(self, groupName)
-    return groupData.GroupColor[groupName] or nil
+    return groupData.GroupColor and groupData.GroupColor[groupName] or nil
 end
 
 -- URLを取得
 -- p1:グループ名
 -- 曲単位のパラメータ配列 は破棄
 local function GetUrl(self, groupName)
-    return groupData.Url[groupName] or nil
+    return groupData.Url and groupData.Url[groupName] or nil
 end
 
 -- コメントを取得
 -- p1:グループ名
 -- 曲単位のパラメータ配列 は破棄
 local function GetComment(self, groupName)
-    return groupData.Comment[groupName] or nil
+    return groupData.Comment and groupData.Comment[groupName] or nil
 end
 
 -- song型からORIGINALNAMEを取得
 -- p1:Song
 -- 曲単位のパラメータ配列 は破棄
 local function GetOriginalName(self, song)
+    if not groupData.OriginalName then
+        return nil
+    end
     local ret
     if groupData.OriginalName[GetSongLowerDir(song)] then
         for _,v in pairs(groupData.OriginalName[GetSongLowerDir(song)] or {}) do
@@ -357,6 +397,9 @@ end
 -- p1:Song
 -- 曲単位のパラメータ配列 は破棄
 local function GetMeterType(self, song)
+    if not groupData.MeterType then
+        return nil
+    end
     local ret
     if groupData.MeterType[GetSongLowerDir(song)] then
         for _,v in pairs(groupData.MeterType[GetSongLowerDir(song)] or {}) do
@@ -367,7 +410,7 @@ local function GetMeterType(self, song)
         end
     end
     return ret or groupData.MeterType[song:GetGroupName()]
-        or defaultDefine.MeterType.Default
+        or defaultDefine.MeterType.default
         or nil
 end
 
@@ -375,6 +418,9 @@ end
 -- p1:Song
 -- 曲単位のパラメータ配列 は破棄
 local function GetMenuColor(self, song)
+    if not groupData.MenuColor then
+        return nil
+    end
     local ret
     if groupData.MenuColor[GetSongLowerDir(song)] then
         for _,v in pairs(groupData.MenuColor[GetSongLowerDir(song)] or {}) do
@@ -385,13 +431,16 @@ local function GetMenuColor(self, song)
         end
     end
     return ret or groupData.MenuColor[song:GetGroupName()]
-        or defaultDefine.MenuColor.Default
+        or defaultDefine.MenuColor.default
         or nil
 end
 
 -- song型からLYRICTYPEを取得
 -- p1:Song
 local function GetLyricType(self, song)
+    if not groupData.LyricType then
+        return nil
+    end
     local data
     if groupData.LyricType[GetSongLowerDir(song)] then
         for _,v in pairs(groupData.LyricType[GetSongLowerDir(song)] or {}) do
@@ -400,7 +449,7 @@ local function GetLyricType(self, song)
         end
     end
     data = data or {groupData.LyricType[song:GetGroupName()], {}}
-    data[1] = data[1] or (defaultDefine.LyricType and defaultDefine.LyricType.Default or nil)
+    data[1] = data[1] or (defaultDefine.LyricType and defaultDefine.LyricType.default or nil)
     return data[1], data[2]
 end
 
@@ -433,24 +482,32 @@ local function CreateSortText(self, ...)
             end)
     for g = 1, #groupList do
         local groupName = groupList[g].Original
-        local sortData = GetRaw(self, groupName, 'SortList') or {}
+        local sortDataOrg = GetRaw(self, groupName, 'SortList') or {}
         local sortList = {
-            Default = 0,
-            Front   = -1,
-            Rear    = 1,
-            Hidden  = 0,
+            default = 0,
+            front   = -1,
+            rear    = 1,
+            hidden  = 0,
         }
         local sortOrder = {}
         -- ソート優先度を定義しているか取得
-        for k,v in pairs(sortData[1] or {}) do
-            sortList[k] = tonumber(v)
+        for k,v in pairs(sortDataOrg[1] or {}) do
+            sortList[string.lower(k)] = tonumber(v)
         end
+        -- キーを小文字で持つ（group.luaの方で大文字小文字を区別させない）
+        local sortData = {}
+        for k,v in pairs(sortDataOrg) do
+            if k ~= 1 then
+                sortData[string.lower(k)] = v
+            end
+        end
+        sortDataOrg = nil
         -- ソート順序を設定
         for k,_ in pairs(sortList) do
-            if k ~= 'Default' then  -- デフォルトは無視
+            if k ~= 'default' then  -- デフォルトは無視
                 for i, dir in pairs(sortData[k] or {}) do
                     local folder = (type(dir) == 'table') and dir[1] or dir
-                    sortOrder[string.lower(folder)] = (k ~= 'Hidden') and i + 100000 * sortList[k] or 0
+                    sortOrder[string.lower(folder)] = (k ~= 'hidden') and i + 100000 * sortList[k] or 0
                 end
             end
         end
@@ -500,14 +557,14 @@ local function IsFolderSongEnabled(self, songOrPath, define)
         return false
     end
     -- 条件が設定されていない（常に表示）
-    if not songData[2] or songData[2].Condition == nil then
+    if not songData[2] or songData[2].condition == nil then
         return true
     end
     -- 条件をチェック
-    if type(songData[2].Condition) == 'function' then
-        return songData[2].Condition()
+    if type(songData[2].condition) == 'function' then
+        return songData[2].condition()
     end
-    return (songData[2].Condition ~= false)
+    return (songData[2].condition ~= false)
 end
 
 -- フォルダを取得
@@ -521,19 +578,19 @@ local function GetFolderList(self, groupName, ...)
     for k,v in pairs(data and data[1] or {}) do
         if activeOnly then
             -- 表示対象が存在するフォルダのみ取得
-            if v.Condition == nil then
+            if v.condition == nil then
                 local cond = false
-                if type(v.Condition) == 'function' then
-                    cond = v.Condition()
+                if type(v.condition) == 'function' then
+                    cond = v.condition()
                 else
-                    cond = (v.Condition ~= false)
+                    cond = (v.condition ~= false)
                 end
                 if cond then
                     -- フォルダ自体の表示条件を満たす
                     local show = {}
                     for _,vFolder in pairs(data[k]) do
                         local folder = (type(vFolder) == 'table') and vFolder[1] or vFolder
-                        if IsFolderSongEnabled(self, groupName..'/'..folder..'/', k) then
+                        if type(folder) == 'string' and IsFolderSongEnabled(self, groupName..'/'..folder..'/', k) then
                             show[#show+1] = folder
                         end
                     end
@@ -565,7 +622,7 @@ AddTargetKey(nil, 'GroupColor',   'color')
 AddTargetKey(nil, 'Url',          'string')
 AddTargetKey(nil, 'Comment',      'string')
 AddTargetKey(nil, 'OriginalName', 'string')
-AddTargetKey(nil, 'MeterType',    'string', {Default = 'DDR', DDRX = 'DDR X', ITG = 'ITG'})
+AddTargetKey(nil, 'MeterType',    'string', {Default = 'DDR', DDRX = 'DDR X', X = 'DDR X', ITG = 'ITG'})
 AddTargetKey(nil, 'MenuColor',    'color')
 AddTargetKey(nil, 'LyricType',    'mixed', {Default = 'Default'})
 AddTargetKey(nil, 'Folder',       'mixed')
@@ -585,6 +642,7 @@ return {
     Sort         = CreateSortText,
     AddKey       = AddTargetKey,
     Fallback     = GetFallback,
+    Define       = GetDefine,
     FolderSong   = IsFolderSongEnabled,
     FolderList   = GetFolderList,
 }
