@@ -1,18 +1,7 @@
---[[ Group_Lua v20211129]]
+--[[ Group_Lua v20211231]]
 
 -- このファイルの相対パス
 local relativePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
-
--- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
-local function _FindValue_(tab, value)
-	for key, name in pairs(tab) do
-		if value == name then
-			return key
-		end
-	end
-
-	return nil
-end
 
 -- Rawデータ
 local groupRaw = {}
@@ -210,7 +199,17 @@ local function SetData(groupName, key)
     if not groupData[key] then
         groupData[key] = {}
     end
-    local data = GetRaw(nil, groupName, key)
+    local data = {}
+    local raw = GetRaw(nil, groupName, key)
+    if type(raw) == 'table' then
+        -- キー名を大文字小文字で区別しないようにする
+        for k,v in pairs(raw or {}) do
+            data[(k == 1) and 1 or string.lower(k)] = v
+        end
+    else
+        data = raw
+    end
+    raw = nil
     if data then
         local lGroupName = string.lower(groupName)
         -- デフォルトの定義を設定
@@ -226,7 +225,6 @@ local function SetData(groupName, key)
         -- フォルダ単位で定義
         -- 各フォルダ
         for k,_ in pairs(define or {}) do
-            local lk = string.lower(k)
             if k ~= 'default' and data[k] and type(data[k]) == 'table' then
                 for _,v in pairs(data[k]) do
                     if type(v) == 'string' then
@@ -234,7 +232,7 @@ local function SetData(groupName, key)
                         if not groupData[key][lGroupName..'/'..string.lower(v)..'/'] then
                             groupData[key][lGroupName..'/'..string.lower(v)..'/'] = {}
                         end
-                        groupData[key][lGroupName..'/'..string.lower(v)..'/'][lk] = {FormatValue(define[lk], key), {}}
+                        groupData[key][lGroupName..'/'..string.lower(v)..'/'][k] = {FormatValue(define[k], key), {}}
                     elseif type(v) == 'table' then
                         -- 楽曲単位でパラメータを定義
                         local folder = v[1] or nil
@@ -249,7 +247,7 @@ local function SetData(groupName, key)
                                     params[string.lower(vk)] = vv
                                 end
                             end
-                            groupData[key][lGroupName..'/'..string.lower(folder)..'/'][lk] = {FormatValue(define[lk], key), params or {}}
+                            groupData[key][lGroupName..'/'..string.lower(folder)..'/'][k] = {FormatValue(define[k], key), params or {}}
                         end
                     end
                 end
