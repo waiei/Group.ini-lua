@@ -1,4 +1,4 @@
---[[ Group_Lua v20230308]]
+--[[ Group_Lua v20241210]]
 
 -- このファイルの絶対パス
 local absolutePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
@@ -544,14 +544,46 @@ local function CreateSortText(self, ...)
     -- 通常ソート
     local groupList = {}
     for _, groupName in pairs(SONGMAN:GetSongGroupNames()) do
+        local name = string.lower(groupNameSort and AdjustSortText(GetGroupName(self, groupName)) or groupName)
         groupList[#groupList+1] = {
             Original = groupName,
-            Sort     = string.lower(groupNameSort and AdjustSortText(GetGroupName(self, groupName)) or groupName),
+            Name     = name,
+            Series   = {Group = name, Version = -1, Index = 0}
         }
+    end
+    for i=1, #groupList do
+        for _, groupName in pairs(SONGMAN:GetSongGroupNames()) do
+            local Series = GetRaw(self, groupName, 'Series')
+            if Series then
+                for index=1, #(Series.List or {}) do
+                    local version = tonumber(Series.Version) or 0
+                    if Series.List[index] == groupList[i].Original
+                        and version > groupList[i].Series.Version then
+                        groupList[i].Series.Group = string.lower(groupNameSort and AdjustSortText(GetGroupName(self, groupName)) or groupName)
+                        groupList[i].Series.Version = version
+                        groupList[i].Series.Index = index
+                        break
+                    end
+                end
+            end
+        end
+    end
+    for i=1, #groupList do
+        groupList[i].Sort = string.format(
+            -- [A]より[A B]が後ろに行くようにスペースを二つ付ける
+            '%s  :%010.2f:%04d:%s',
+            groupList[i].Series.Group,
+            groupList[i].Series.Version,
+            groupList[i].Series.Index,
+            groupList[i].Name
+        )
     end
     table.sort(groupList, function(a, b)
                 return a.Sort < b.Sort
             end)
+    -- table.sort(groupList, function(a, b)
+    --             return a.Name < b.Name
+    --         end)
     for g = 1, #groupList do
 
         local groupName = groupList[g].Original
@@ -566,6 +598,9 @@ local function CreateSortText(self, ...)
     end
     f:Close()
     f:destroy()
+    if FILEMAN.FlushDirCache then
+        FILEMAN:FlushDirCache(THEME:GetCurrentThemeDirectory()..'Other/')
+    end
     SONGMAN:SetPreferredSongs(sortName)
 end
 

@@ -1,4 +1,4 @@
---[[ Group_Ini v20240413 ]]
+--[[ Group_Ini v20241210 ]]
 
 --[[
 -- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
@@ -50,6 +50,9 @@ local spKeyList = {
     },
     Comment = {
         'comment',
+    },
+    Series = {
+        'series',
     },
 }
 
@@ -116,6 +119,22 @@ local functionList = {
             end
         end
         return comment
+    end,
+    -- Url：分割された状態なので統合する
+    Series = function(defineValues, _)
+        if not defineValues.series then return nil end
+        local value = {}
+        local i = 0
+        while(true) do
+            i = i+1
+            local target = (i == 0) and 'Default' or 'Group'..i
+            if not defineValues.series[target] then break end
+            value[#value+1] = defineValues.series[target]
+        end
+        return {
+            Version = defineValues.series.Default or -1,
+            List = value,
+        }
     end,
 }
 
