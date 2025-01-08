@@ -1,4 +1,4 @@
---[[ Group_Ini v20230704 ]]
+--[[ Group_Ini v20241210 ]]
 
 --[[
 -- グローバル関数にFindValueが存在するが、5.0と異なるので5.1のコードを利用
@@ -42,35 +42,53 @@ local spKeyList = {
         'sortlist_front',
         'sortlist_hidden',
     },
+    Name = {
+        'name',
+    },
     Url = {
         'url',
     },
     Comment = {
         'comment',
     },
+    Series = {
+        'series',
+    },
 }
 
 -- 変換処理
+local function FlatTable(v)
+    if not v then return {} end
+    local cnt = 0
+    for _, _ in pairs(v) do
+        cnt = cnt + 1
+    end
+    local d = {}
+    if v.Default then
+        d[#d + 1] = v.Default
+    end
+    for i = 1, cnt - 1 do
+        if v['Group' .. i] then
+            d[#d + 1] = v['Group' .. i]
+        end
+    end
+    return d
+end
+-- 1行用パラメータ処理
+local function SingleLineFunction(defineValues, key)
+    if not defineValues[key] then return nil end
+    local value = defineValues[key].Default or ''
+    local i = 0
+    while(true) do
+        i = i+1
+        if not defineValues[key]['Group'..i] then break end
+        value = value..':'..defineValues[key]['Group'..i]
+    end
+    return value
+end
 local functionList = {
     -- SortList：Front,Rear,Hiddenを統合
     SortList = function(defineValues, _)
-        local function FlatTable(v)
-            if not v then return {} end
-            local cnt = 0
-            for _, _ in pairs(v) do
-                cnt = cnt + 1
-            end
-            local d = {}
-            if v.Default then
-                d[#d + 1] = v.Default
-            end
-            for i = 1, cnt - 1 do
-                if v['Group' .. i] then
-                    d[#d + 1] = v['Group' .. i]
-                end
-            end
-            return d
-        end
         return {
             { Front = -1, Default = 0, Rear = 1, Hidden = 0, },
             Rear   = FlatTable(defineValues.sortlist_rear),
@@ -78,17 +96,13 @@ local functionList = {
             Hidden = FlatTable(defineValues.sortlist_hidden),
         }
     end,
+    -- Name：分割された状態なので統合する
+    Name = function(defineValues, _)
+        return SingleLineFunction(defineValues, 'name')
+    end,
     -- Url：分割された状態なので統合する
     Url = function(defineValues, _)
-        if not defineValues.url then return '' end
-        local url = defineValues.url.Default or ''
-        local i = 0
-        while(true) do
-            i = i+1
-            if not defineValues.url['Group'..i] then break end
-            url = url..':'..defineValues.url['Group'..i]
-        end
-        return url
+        return SingleLineFunction(defineValues, 'url')
     end,
     -- Comment：改行を意味する「|」を改行コードに変換、途中「:」が含まれてると分割されるので統合
     Comment = function(defineValues, dataValues)
@@ -105,6 +119,22 @@ local functionList = {
             end
         end
         return comment
+    end,
+    -- Url：分割された状態なので統合する
+    Series = function(defineValues, _)
+        if not defineValues.series then return nil end
+        local value = {}
+        local i = 0
+        while(true) do
+            i = i+1
+            local target = (i == 0) and 'Default' or 'Group'..i
+            if not defineValues.series[target] then break end
+            value[#value+1] = defineValues.series[target]
+        end
+        return {
+            Version = defineValues.series.Default or -1,
+            List = value,
+        }
     end,
 }
 
@@ -253,8 +283,10 @@ return {
         while not f:AtEOF() do
             -- BOMを除去して取得
             local fLine = string.gsub(f:GetLine(), '^' .. string.char(0xef, 0xbb, 0xbf) .. '(#.+)', '%1')
-            if string.sub(string.lower(fLine), 1, 5) == '#url:' then
-                -- URL行は//を含むので特殊処理
+            local fLowLine = string.lower(fLine)
+            if string.sub(fLowLine, 1, 5) == '#url:'
+                or string.sub(fLowLine, 1, 6) == '#name:' then
+                -- URLとNAME行は//を含むので特殊処理
                 fLine = string.gsub(fLine, '#([^:]+):([^;]+);.*', '#%1:%2;')
             else
                 -- コメントを除去
