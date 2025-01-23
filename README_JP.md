@@ -64,5 +64,9 @@ return {
 }
 ```
 
+## 解析用ライブラリ
+
+このリポジトリでは、テーマに簡単にGroup.iniとGroup.luaを導入することができるライブラリを配布しています。
+
 ## ドキュメント
-[こちらをご覧ください](doc/jp/README.md)
+[こちらをご覧ください](https://github.com/waiei/Group.ini-lua/wiki)

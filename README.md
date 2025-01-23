@@ -66,5 +66,9 @@ return {
 }
 ```
 
+## Libraries for analysis
+
+This repository distributes a library that allows you to easily introduce Group.ini and Group.lua into the themes you create.
+
 ## Documents
-[Please see here.](doc/en/README.md)
+[Please see here.](https://github.com/waiei/Group.ini-lua/wiki)
