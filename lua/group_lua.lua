@@ -1,4 +1,4 @@
---[[ Group_Lua v20241210]]
+--[[ Group_Lua v20250327]]
 
 -- このファイルの絶対パス
 local absolutePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
@@ -24,6 +24,14 @@ local groupIniFile = 'group_ini.lua'
 local groupIni
 if FILEMAN:DoesFileExist(absolutePath..groupIniFile) then
     groupIni = dofile(absolutePath..groupIniFile)
+end
+
+-- Pack.ini処理用
+-- 同じディレクトリにgroup_pack.luaがある場合のみ読みこみ
+local groupPackFile = 'group_pack.lua'
+local groupPack
+if FILEMAN:DoesFileExist(absolutePath..groupPackFile) then
+    groupPack = dofile(absolutePath..groupPackFile)
 end
 
 -- ファイルを検索してパスを返却（大文字小文字を無視）
@@ -85,6 +93,16 @@ local function LoadGroupIni(filePath)
     end
 end
 
+-- Pack.iniを読み込む
+-- 外部呼出し不可
+local function LoadGroupPack(groupName)
+    if groupPack then
+        return groupPack:Load(groupName)
+    else
+        return {}
+    end
+end
+
 -- 値をフォーマット
 -- 外部呼出し不可
 local function FormatValue(data, key)
@@ -106,9 +124,11 @@ local function FormatValue(data, key)
     return nil
 end
 
--- Grouop.luaまたはGroup.iniを読み込んでRawデータとして保存
+-- Grouop.luaまたはGroup.ini、Pack.iniを読み込んでRawデータとして保存
 -- 外部呼出し不可
-local function SetRaw(groupName, groupLuaPath, groupIniPath)
+local function SetRaw(groupName)
+    local groupLuaPath = SearchFile(groupName, 'group.lua')
+    local groupIniPath = (not groupLuaPath) and SearchFile(groupName, 'group.ini') or nil
     groupRaw[groupName] = nil
     if groupLuaPath then
         -- Group.luaを読み込み、エラーがあれば処理を行わない
@@ -136,9 +156,12 @@ local function SetRaw(groupName, groupLuaPath, groupIniPath)
             return
         end
         groupRaw[groupName] = luaString()
-    else
+    elseif groupIniPath then
         -- Group.luaが存在しない場合はiniを変換する
         groupRaw[groupName] = LoadGroupIni(groupIniPath)
+    else
+        -- Group.iniも存在しない場合かつ、Pack.iniの情報があれば格納
+        groupRaw[groupName] = LoadGroupPack(groupName)
     end
 end
 
@@ -285,6 +308,9 @@ local function Scan(self, ...)
     local groupName = ...
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
+        if groupPack then
+            groupPack:PackReset()
+        end
         local groups = SONGMAN and SONGMAN:GetSongGroupNames() or {}    -- 5.0.7RC対策
         for _, group in pairs(groups) do
             Scan(self, group)
@@ -293,9 +319,7 @@ local function Scan(self, ...)
     end
 
     -- 読みこんでRawに保存
-    local groupLuaPath = SearchFile(groupName, 'group.lua')
-    local groupIniPath = (not groupLuaPath) and SearchFile(groupName, 'group.ini') or nil
-    SetRaw(groupName, groupLuaPath, groupIniPath)
+    SetRaw(groupName)
 
     -- 情報を取得
     for key,_ in pairs(keyType) do
