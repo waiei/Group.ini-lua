@@ -1,4 +1,4 @@
---[[ Group_Lua v20241210]]
+--[[ Group_Lua v20251114]]
 
 -- このファイルの絶対パス
 local absolutePath = string.gsub(string.sub(debug.getinfo(1).source, 2), '(.+/)[^/]+', '%1')
@@ -26,6 +26,14 @@ if FILEMAN:DoesFileExist(absolutePath..groupIniFile) then
     groupIni = dofile(absolutePath..groupIniFile)
 end
 
+-- Pack.ini処理用
+-- 同じディレクトリにgroup_pack.luaがある場合のみ読みこみ
+local groupPackFile = 'group_pack.lua'
+local groupPack
+if FILEMAN:DoesFileExist(absolutePath..groupPackFile) then
+    groupPack = dofile(absolutePath..groupPackFile)
+end
+
 -- ファイルを検索してパスを返却（大文字小文字を無視）
 -- 外部呼出し不可
 -- p1:グループ名
@@ -37,8 +45,12 @@ local function SearchFile(groupName, searchFileName, ...)
         local dirList = FILEMAN:GetDirListing(songPathList[i]..groupName..'/')
         for d=1, #dirList do
             local lSearch, lFilename = string.lower(searchFileName), string.lower(dirList[d])
-            if (not leftMatch and lSearch == lFilename) or string.find(lFilename, lSearch, 1, true) then
-                return songPathList[i]..groupName..'/'..dirList[d]
+            if not leftMatch and lSearch == lFilename then
+                local fSearch = string.find(lFilename, lSearch, 1, true)
+                -- 前方一致であること
+                if fSearch and fSearch == 1 then
+                    return songPathList[i]..groupName..'/'..dirList[d]
+                end
             end
         end
     end
@@ -85,6 +97,16 @@ local function LoadGroupIni(filePath)
     end
 end
 
+-- Pack.iniを読み込む
+-- 外部呼出し不可
+local function LoadGroupPack(groupName)
+    if groupPack then
+        return groupPack:Load(groupName)
+    else
+        return {}
+    end
+end
+
 -- 値をフォーマット
 -- 外部呼出し不可
 local function FormatValue(data, key)
@@ -106,9 +128,11 @@ local function FormatValue(data, key)
     return nil
 end
 
--- Grouop.luaまたはGroup.iniを読み込んでRawデータとして保存
+-- Grouop.luaまたはGroup.ini、Pack.iniを読み込んでRawデータとして保存
 -- 外部呼出し不可
-local function SetRaw(groupName, groupLuaPath, groupIniPath)
+local function SetRaw(groupName)
+    local groupLuaPath = SearchFile(groupName, 'group.lua')
+    local groupIniPath = (not groupLuaPath) and SearchFile(groupName, 'group.ini') or nil
     groupRaw[groupName] = nil
     if groupLuaPath then
         -- Group.luaを読み込み、エラーがあれば処理を行わない
@@ -136,9 +160,12 @@ local function SetRaw(groupName, groupLuaPath, groupIniPath)
             return
         end
         groupRaw[groupName] = luaString()
-    else
+    elseif groupIniPath then
         -- Group.luaが存在しない場合はiniを変換する
         groupRaw[groupName] = LoadGroupIni(groupIniPath)
+    else
+        -- Group.iniも存在しない場合かつ、Pack.iniの情報があれば格納
+        groupRaw[groupName] = LoadGroupPack(groupName)
     end
 end
 
@@ -194,6 +221,23 @@ local function GetDefine(self, groupName, key)
     return define
 end
 
+-- グループの一覧部分を取得
+-- p1:グループ名
+-- p2:取得するキー
+-- p3:定義名
+local function GetList(self, groupName, key, _defineName)
+    local defineName = string.lower(_defineName)
+    local raw = GetRaw(self, groupName, key)
+    for dn,li in pairs(raw or {}) do
+        if string.lower(dn) == defineName then
+            local ret = {}
+            DeepCopy(li, ret)
+            return ret
+        end
+    end
+    return nil
+end
+
 -- パラメータを指定して一時変数に格納
 -- 外部呼出し不可
 -- groupData[key][グループフォルダ名] = デフォルト値
@@ -243,7 +287,7 @@ local function SetData(groupName, key)
                             if not groupData[key][lGroupName..'/'..string.lower(folder)..'/'] then
                                 groupData[key][lGroupName..'/'..string.lower(folder)..'/'] = {}
                             end
-                            -- 数字キーを削除、大文字小文字を区別させない
+                            -- 数字キー(v[1])を削除、大文字小文字を区別させない
                             local params = {}
                             for vk,vv in pairs(v) do
                                 if type(vk) ~= 'number' then
@@ -285,6 +329,9 @@ local function Scan(self, ...)
     local groupName = ...
     -- グループ名の指定がない場合は全グループを検索
     if not groupName then
+        if groupPack then
+            groupPack:PackReset()
+        end
         local groups = SONGMAN and SONGMAN:GetSongGroupNames() or {}    -- 5.0.7RC対策
         for _, group in pairs(groups) do
             Scan(self, group)
@@ -293,9 +340,7 @@ local function Scan(self, ...)
     end
 
     -- 読みこんでRawに保存
-    local groupLuaPath = SearchFile(groupName, 'group.lua')
-    local groupIniPath = (not groupLuaPath) and SearchFile(groupName, 'group.ini') or nil
-    SetRaw(groupName, groupLuaPath, groupIniPath)
+    SetRaw(groupName)
 
     -- 情報を取得
     for key,_ in pairs(keyType) do
@@ -532,9 +577,13 @@ end
 -- ソートファイルを作成
 -- p1:ソートファイル名（Group）
 -- p2:グループをGroup.luaのNameで指定したテキストでソート（true）
+-- p3:オプション（{param = value}）
+--    FilterMode = Only/Exclude -- Only：指定グループのみをデフォルトソートで表示、Exclude：指定グループをデフォルトソートから除外
+--    GroupList = {グループ名の一覧} -- 対象のグループ
 local function CreateSortText(self, ...)
-    local sortName, groupNameSort = ...
+    local sortName, groupNameSort, option = ...
     sortName = sortName or 'Group'
+    option = option or {}
     groupNameSort = (groupNameSort == nil) and true or groupNameSort
     local f = RageFileUtil.CreateRageFile()
     if not f:Open(THEME:GetCurrentThemeDirectory()..'Other/SongManager '..sortName..'.txt', 2) then
@@ -543,13 +592,23 @@ local function CreateSortText(self, ...)
     end
     -- 通常ソート
     local groupList = {}
+    local showDefault = string.lower((option.FilterMode or 'exclude')) ~= 'only'
     for _, groupName in pairs(SONGMAN:GetSongGroupNames()) do
-        local name = string.lower(groupNameSort and AdjustSortText(GetGroupName(self, groupName)) or groupName)
-        groupList[#groupList+1] = {
-            Original = groupName,
-            Name     = name,
-            Series   = {Group = name, Version = -1, Index = 0}
-        }
+        local show = showDefault
+        for k,g in pairs(option.GroupList or {}) do
+            if groupName == g then
+                show = not showDefault
+            end
+        end
+        if show then
+            local sortKey = GetRaw(self, groupName, 'SortKey') or GetGroupName(self, groupName)
+            local name = string.lower(groupNameSort and AdjustSortText(sortKey) or groupName)
+            groupList[#groupList+1] = {
+                Original = groupName,
+                Name     = name,
+                Series   = {Group = name, Version = -1, Index = 0}
+            }
+        end
     end
     for i=1, #groupList do
         for _, groupName in pairs(SONGMAN:GetSongGroupNames()) do
@@ -559,7 +618,8 @@ local function CreateSortText(self, ...)
                     local version = tonumber(Series.Version) or 0
                     if Series.List[index] == groupList[i].Original
                         and version > groupList[i].Series.Version then
-                        groupList[i].Series.Group = string.lower(groupNameSort and AdjustSortText(GetGroupName(self, groupName)) or groupName)
+                        local sortKey = GetRaw(self, groupName, 'SortKey') or GetGroupName(self, groupName)
+                        groupList[i].Series.Group = string.lower(groupNameSort and AdjustSortText(sortKey) or groupName)
                         groupList[i].Series.Version = version
                         groupList[i].Series.Index = index
                         break
