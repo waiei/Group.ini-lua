@@ -280,12 +280,12 @@ return {
         end
         local current = nil
         local values = ''
+        local enableAdd = true
         while not f:AtEOF() do
             -- BOMを除去して取得
             local fLine = string.gsub(f:GetLine(), '^' .. string.char(0xef, 0xbb, 0xbf) .. '(#.+)', '%1')
             local fLowLine = string.lower(fLine)
-            if string.sub(fLowLine, 1, 5) == '#url:'
-                or string.sub(fLowLine, 1, 6) == '#name:' then
+            if string.sub(fLowLine, 1, 5) == '#url:' or string.sub(fLowLine, 1, 6) == '#name:' then
                 -- URLとNAME行は//を含むので特殊処理
                 fLine = string.gsub(fLine, '#([^:]+):([^;]+);.*', '#%1:%2;')
             else
@@ -304,10 +304,17 @@ return {
                 -- 次のパラメータのキーを設定する
                 current = string.lower(key)
                 -- #AAA:BBB のBBB部分（1行目）を取得
-                values  = split(';', value)[1]
-            else
+                values = split(';', value)[1]
+                -- 2行目以降の取得も許可
+                enableAdd = true
+            elseif enableAdd then
                 -- 現在のパラメータが2行以上ある場合
-                values = values .. split(';', fLine)[1]
+                local splLine = split(';', fLine)
+                values = values .. splLine[1]
+            end
+            -- ;が存在したらそれ以降は認識しないようにする
+            if string.find(fLine, ';', 1, true) then
+                enableAdd = false
             end
         end
         f:Close()

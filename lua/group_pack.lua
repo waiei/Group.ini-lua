@@ -1,4 +1,4 @@
---[[ Group_Pack v20250326 ]]
+--[[ Group_Pack v20250327 ]]
 
 -- Format
 -- https://github.com/itgmania/itgmania/releases/tag/v1.0.0
@@ -50,20 +50,21 @@ local function GetAllPack()
                 -- ちょっと効率が悪いけどグループフォルダが数百無いのであれば速度的な問題はないかと
                 if pg.Series then
                     local series = pg.Series
-                    if not packSeries[pg.Series] then
-                        packSeries[pg.Series] = {}
+                    if not packSeries[series] then
+                        packSeries[series] = {}
                     end
-                    packSeries[pg.Series][#packSeries[pg.Series]+1] = {
+                    packSeries[series][#packSeries[series]+1] = {
                         Key = pg.SortTitle or pg.DisplayTitle or group,
                         Group = group,
                     }
-                    table.sort(packSeries[pg.Series], function(a, b) return a.Key < b.Key end)
+                    table.sort(packSeries[series], function(a, b) return a.Key < b.Key end)
                 end
                 allGroupPack[group] = {
                     -- enテキストしか許容していない場合はTranslitTitleを取得する
                     Name = nativeLang and pg.DisplayTitle or pg.TranslitTitle or group,
+                    SortKey = pg.SortTitle or pg.DisplayTitle or group,
                 }
-                if packSeries[pg.Series] then
+                if pg.Series and packSeries[pg.Series] then
                     local s = {}
                     for _,ps in pairs(packSeries[pg.Series]) do
                         s[#s+1] = ps.Group
