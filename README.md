@@ -1,32 +1,34 @@
-[English(DeepL)](README.md) / [日本語](README_JP.md)
+[English (DeepL/Gemini)](README.md) / [日本語](README_JP.md)
 
-**The English documentation has been translated using [DeepL](https://www.deepl.com/home).**
+# Group.ini/lua
+A summary of information on Group.ini, which is available in some StepMania themes, and the specification for the new Group.lua format.
 
-# Group.ini-lua
-A summary of information on Group.ini available for some of StepMania's themes and the specification of the new Group.lua format.
+---
 
-## What's Group.ini?
-This is a feature implemented in the StepMania 5.0 theme WAIEI, which allows you to create a file called Group.ini directly under the group folder for various customizations.  
-For example, the following functions are available.
-- Japanese notation for group folders.
-- The color of the text on the song selection screen.(MENUCOLOR)
-- How many levels of difficulty can be set.(METERTYPE)
- 
-Group.ini is used in many of the Japanese packages, and can be handled by the WAIEI series as well as several other themes.
+## What is Group.ini?
+This feature was first implemented in the StepMania 5 exclusive theme, **WAIEI**. By creating a file named `Group.ini` directly within a song group folder, various customizations become possible.
 
-## Group.lua
-Group.ini adds a lot of functionality, but because of its unique format, you need to learn how to write it in order to create it.  
-The extension is INI, but the format is different from the general INI, so it needs to be analyzed to be handled by the theme.  
-Also, it does not allow for advanced usage such as script control.
+For example, it provides functionalities such as:
+* Displaying the song group folder name in Japanese (multibyte characters).
+* Setting the text color for songs on the selection screen (`#MENUCOLOR`).
+* Configuring the range/scale for difficulty numerical values (`#METERTYPE`).
 
-In order to solve the above problem, Group.lua is designed to be defined in Lua tables.  
-The basic format is the same as in Group.ini, but the different formats are unified.  
-Also, since it is a table, the theme can read it without the need for parsing.
+`Group.ini` has been adopted by many Japanese song packages and can be utilized not only by the WAIEI series but also by several other community themes.
 
-(Example)  
+## The Need for Group.lua
+While `Group.ini` adds a lot of functionality, its unique, non-standard format requires users to learn a specific syntax to create the files. Even though the extension is `.ini`, the format differs from a general INI file, requiring themes to implement a specific parser to handle it. Furthermore, it does not support advanced usage such as conditional application or complex script control.
+
+To solve these issues, we introduced **Group.lua**, which allows definitions to be written using Lua tables.
+The basic structure is aligned with the concepts of `Group.ini`, unifying various syntaxes that were previously fragmented by function. Crucially, because it is a standard Lua table, themes can integrate and utilize the data directly without the need for complex parsing.
+
+### Example Comparison
+| Feature | Group.ini (Custom Format) | Group.lua (Lua Table Format) |
+| :--- | :--- | :--- |
+| **MenuColor** | `#MENUCOLOR:1.0,0.0,0.0,1.0;` | `MenuColor = color('1,0,0,1')` |
+
 `Group.ini`
 ```Plain Text
-#NAME:Group name (multibyte acceptable);
+#NAME:☆Group Name☆ (Multibyte characters allowed);
 #MENUCOLOR:
 1,0,0,1
 :
@@ -41,10 +43,10 @@ song2
 ;
 ```
 
-`Group.lua (draft)`
-```Lua
+`Group.lua`
+```lua
 return {
-    Name = 'Group name (multibyte acceptable)',
+    Name = '☆Group Name☆ (Multibyte characters allowed)',
     MenuColor = {
         {
             Default = color('1,0,0,1'),
@@ -66,9 +68,16 @@ return {
 }
 ```
 
-## Libraries for analysis
+## Parsing Library
 
-This repository distributes a library that allows you to easily introduce Group.ini and Group.lua into the themes you create.
+This repository distributes a library that allows theme developers to easily integrate both `Group.ini` and `Group.lua` into their themes.
 
-## Documents
-[Please see here.](https://github.com/waiei/Group.ini-lua/wiki)
+## Documentation
+
+The Wiki contains detailed documentation on how **Package Creators** should prepare the Group.ini/lua files and how **Theme Developers** can implement the parsing.
+
+[Please see the Wiki here](https://github.com/waiei/Group.ini-lua/wiki)
+
+-----
+
+**This text was translated using DeepL and edited by Gemini.**
