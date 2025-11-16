@@ -1,10 +1,10 @@
-[English(DeepL)](README.md) / [日本語](README_JP.md)
+[English(DeepL/Gemini)](README.md) / [日本語](README_JP.md)
 
 # Group.ini/lua
 StepManiaの一部のテーマで利用可能なGroup.iniの情報まとめと、新しいフォーマットとなるGroup.luaの仕様です。
 
 ## Group.iniとは
-StepMania5.0専用テーマWAIEIで実装された機能で、グループフォルダ直下にGroup.iniというファイルを作成することで様々なカスタマイズが可能となります。  
+StepMania5専用テーマWAIEIで実装された機能で、グループフォルダ直下にGroup.iniというファイルを作成することで様々なカスタマイズが可能となります。  
 例えば以下のような機能があります。
 - グループフォルダの日本語表記
 - 選曲画面での楽曲文字色
@@ -39,7 +39,7 @@ song2
 ;
 ```
 
-`Group.lua（草案）`
+`Group.lua`
 ```Lua
 return {
     Name = 'グループ名（マルチバイト文字可）',
@@ -69,4 +69,5 @@ return {
 このリポジトリでは、テーマに簡単にGroup.iniとGroup.luaを導入することができるライブラリを配布しています。
 
 ## ドキュメント
+パッケージ製作者がGroup.ini/luaをどのように用意すればよいのか、テーマ製作者はどのように解析を行うのかをWikiにまとめています。<br>
 [こちらをご覧ください](https://github.com/waiei/Group.ini-lua/wiki)
